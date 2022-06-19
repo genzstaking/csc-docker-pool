@@ -9,6 +9,8 @@ import logging
 import sys
 
 from csc_docker_pool import __version__
+import csc_docker_pool.wallet_cli as wallet_cli
+import csc_docker_pool.config_cli as config_cli
 
 __author__ = "maso"
 __copyright__ = "maso"
@@ -16,28 +18,6 @@ __license__ = "MIT"
 
 _logger = logging.getLogger(__name__)
 
-
-# ---- Python API ----
-# The functions defined in this section can be imported by users in their
-# Python scripts/interactive interpreter, e.g. via
-# `from csc_docker_pool.skeleton import fib`,
-# when using this Python module as a library.
-
-
-def fib(n):
-    """Fibonacci example function
-
-    Args:
-      n (int): integer
-
-    Returns:
-      int: n-th Fibonacci number
-    """
-    assert n > 0
-    a, b = 1, 1
-    for _i in range(n - 1):
-        a, b = b, a + b
-    return a
 
 
 # ---- CLI ----
@@ -62,11 +42,6 @@ def parse_args(args):
         action="version",
         version="csc-docker-pool {ver}".format(ver=__version__),
     )
-    #parser.add_argument(
-    #    dest="n", 
-    #    help="n-th Fibonacci number", 
-    #    type=int, 
-    #    metavar="INT")
     parser.add_argument(
         "-v",
         "--verbose",
@@ -89,36 +64,10 @@ def parse_args(args):
         title="Management command",
         description="Many commands are added to help you in maintenance and management."
     )
-    #----------------------------------------------------------
-    # Wallet
-    #----------------------------------------------------------
-    parser_wallet = subparsers.add_parser(
-        'wallet', 
-        help='Manages wallets'
-    )
-    parser_wallet.add_argument(
-        '--name', 
-        help='target wallet name'
-    )
     
+    wallet_cli.parse_args(subparsers)
+    config_cli.parse_args(subparsers)
     
-    
-    #----------------------------------------------------------
-    # Config
-    #----------------------------------------------------------
-    parser_config = subparsers.add_parser(
-        'config', 
-        help='Manages current pool configuration'
-    )
-    subparsers_config = parser_config.add_subparsers(
-        title="Configuration commands",
-        description="Many tools are provided to manage configuration. They are available view commands."
-    )
-    
-    parser_config_init = subparsers_config.add_parser(
-        'init', 
-        help='Initialize the configuration'
-    )
     
     return parser.parse_args(args)
 
