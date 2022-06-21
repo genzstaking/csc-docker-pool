@@ -1,5 +1,4 @@
-============
 Contributors
-============
+============================================================
 
-* maso <mostafa.barmshory@gmail.com>
+* Mostafa Barmshory <mostafa.barmshory@gmail.com>

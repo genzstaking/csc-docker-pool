@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Cardano Pool'
-copyright = '2022, genz-pool.com'
-author = 'genz-pool.com'
+project = 'CSC Docker Pool'
+copyright = '2022, genz-bank.github.io'
+author = 'genz-bank.github.io'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1.0'

@@ -27,11 +27,9 @@
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
 
-|
 
-===============
-csc-docker-pool
-===============
+CSC Docker Pool Utilities
+===================================================================================
 
 
     Add a short description here!
@@ -40,10 +38,23 @@ csc-docker-pool
 A longer description of your project goes here...
 
 
+
+.. toctree::
+   :maxdepth: 2
+
+   CETD <cetd/index.rst>
+   Documentation <docs/index.rst>
+   install.rst
+   support.rst
+   CONTRIBUTING.rst
+   CHANGELOG.rst
+   AUTHORS.rst
+   
+
 .. _pyscaffold-notes:
 
 Note
-====
+===================================================================================
 
 This project has been set up using PyScaffold 4.2.3. For details and usage
 information on PyScaffold see https://pyscaffold.org/.
