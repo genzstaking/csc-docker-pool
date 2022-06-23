@@ -11,14 +11,13 @@ import sys
 from csc_docker_pool import __version__
 import csc_docker_pool.wallet_cli as wallet_cli
 import csc_docker_pool.config_cli as config_cli
+import csc_docker_pool.relay_cli as relay_cli
 
 __author__ = "maso"
 __copyright__ = "maso"
 __license__ = "MIT"
 
 _logger = logging.getLogger(__name__)
-
-
 
 # ---- CLI ----
 # The functions defined in this section are wrappers around the main Python
@@ -36,7 +35,14 @@ def parse_args(args):
     Returns:
       :obj:`argparse.Namespace`: command line parameters namespace
     """
-    parser = argparse.ArgumentParser(description="GenZ Bank CSC Pool")
+    parser = argparse.ArgumentParser(
+        prog="GenZ Bank CSC Pool Manager",
+        usage="genz-csc-pool",
+        description="GenZ Bank CSC Pool Manager and utilities",
+        add_help=True,
+        allow_abbrev=True,
+        exit_on_error=True
+    )
     parser.add_argument(
         "--version",
         action="version",
@@ -59,7 +65,6 @@ def parse_args(args):
         const=logging.DEBUG,
     )
     
-    
     subparsers = parser.add_subparsers(
         title="Management command",
         description="Many commands are added to help you in maintenance and management."
@@ -67,7 +72,7 @@ def parse_args(args):
     
     wallet_cli.parse_args(subparsers)
     config_cli.parse_args(subparsers)
-    
+    relay_cli.parse_args(subparsers)
     
     return parser.parse_args(args)
 
@@ -80,7 +85,10 @@ def setup_logging(loglevel):
     """
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
     logging.basicConfig(
-        level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
+        level=loglevel, 
+        stream=sys.stdout, 
+        format=logformat, 
+        datefmt="%Y-%m-%d %H:%M:%S"
     )
 
 
@@ -93,9 +101,8 @@ def main(args):
     """
     args = parse_args(args)
     setup_logging(args.loglevel)
-    _logger.debug("Starting configuration check...")
-    
-    _logger.info("Script ends here")
+    _logger.debug("Fetch and run default function")
+    args.func(args)
 
 
 def run():

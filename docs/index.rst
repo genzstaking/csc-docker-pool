@@ -21,16 +21,18 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   Overview <readme>
    csc-about.rst
    csc-basic-concepts.rst
    csc-consensus.rst
    csc-wallet.rst
-   Overview <readme>
+   csc-genesis-block.rst
+   csc-node-run.rst
+   csc-node-run.rst
    Contributions & Help <contributing>
    License <license>
    Authors <authors>
    Changelog <changelog>
-   Module Reference <api/modules>
 
 
 Indices and tables
