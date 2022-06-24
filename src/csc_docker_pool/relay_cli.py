@@ -3,6 +3,8 @@ import docker
 import os
 import codecs
 from builtins import IOError, FileNotFoundError
+from csc_docker_pool.relay import is_relay_node, create_relay_node
+import time
 
 _logger = logging.getLogger(__name__)
 
@@ -37,19 +39,17 @@ def handle_relay_init(args):
     
     path = os.getcwd() + '/' + args.name;
     _logger.debug("Check the node folder {}".format(path))
-    if os.path.exists(path):
-        _logger.critical(msg="Node folder exist ({}). Remove node and init it again.".format(args.name))
+    relay = create_relay_node(path)
+    if relay.is_initialized:
+        _logger.critical(msg="Node {} was initialized before. Remove node and init it again.".format(args.name))
         exit(1)
     
-    _logger.debug("Create node folder {}".format(path))
-    os.mkdir(path)
-      
     _logger.info("Running genzbank/cetd container to init node {}".format(args.name))
     output = client.containers.run(
         "genzbank/cetd",
         options,
         user=os.getuid(),
-        volumes=[path + ":/root"],
+        volumes=[relay.path + ":/root"],
         working_dir="/root",
         stderr=True,
         stdout=True,
@@ -58,7 +58,9 @@ def handle_relay_init(args):
         _logger.debug(" container>" + line)
     
     _logger.info("Node {} is initialized with default configuration".format(args.name))
-
+    relay.is_initialized = True
+    relay.network = args.network[0]
+    relay.save()
 
 
 def handle_relay_run(args):
@@ -74,19 +76,21 @@ def handle_relay_run(args):
     path = os.getcwd() + '/' + args.name;
     # TODO: convert this part to is_node
     _logger.debug("Check the node folder {}".format(path))
-    if not os.path.exists(path):
-        _logger.critical(msg="Node folder dose not exist! use `csc-docker-pool relay --name {} init` command.".format(args.name))
+    relay = create_relay_node(path)
+    if not relay.is_initialized:
+        _logger.critical(msg="Node is not initialized! use `csc-docker-pool relay --name {} init`  to initialize the node.".format(args.name))
         exit(1)
         
     options = "--datadir /root"
     # TODO: maso, 2022: to support --syncmod
     
+    relay.start_time = int(time.time())
     _logger.info("Running genzbank/cetd container to init node {}".format(args.name))
     container = client.containers.run(
         "genzbank/cetd",
         options,
         user=os.getuid(),
-        volumes=[path + ":/root"],
+        volumes=[relay.path + ":/root"],
         working_dir="/root",
         stderr=True,
         stdout=True,
@@ -96,6 +100,9 @@ def handle_relay_run(args):
     for lines in process:
         for line in codecs.decode(lines).splitlines():
             _logger.debug(" container>" + line)
+    # Svae relay node state
+    relay.end_time = int(time.time())
+    relay.save()
     
     
 def parse_args(subparsers):
@@ -127,6 +134,12 @@ def parse_args(subparsers):
         required=False,
         dest='network'
     )
+    subparsers_init.add_argument(
+        '--name',
+        help='target wallet name',
+        dest='name',
+        default='main'
+    )
     
     #----------------------------------------------------------
     # run
@@ -152,15 +165,4 @@ def parse_args(subparsers):
         required=False,
         dest='network'
     )
-    
-
-
-
-
-
-
-
-
-
-
 
