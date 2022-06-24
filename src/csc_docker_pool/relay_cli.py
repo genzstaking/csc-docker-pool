@@ -5,6 +5,7 @@ import codecs
 from builtins import IOError, FileNotFoundError
 from csc_docker_pool.relay import is_relay_node, create_relay_node
 import time
+import pandas
 
 _logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ def handle_relay_init(args):
     _logger.info("Node {} is initialized with default configuration".format(args.name))
     relay.is_initialized = True
     relay.network = args.network[0]
+    relay.name = args.name
     relay.save()
 
 
@@ -103,7 +105,14 @@ def handle_relay_run(args):
     # Svae relay node state
     relay.end_time = int(time.time())
     relay.save()
+
     
+def handle_relay_list(args):
+    root_path = os.getcwd()
+    nodes = [ create_relay_node(f.path).__dict__ for f in os.scandir(root_path) if f.is_dir() and is_relay_node(f.path) ]
+    frame = pandas.DataFrame(nodes, columns=['name', 'network', 'is_initialized'])
+    print(frame)
+
     
 def parse_args(subparsers):
     parser = subparsers.add_parser(
@@ -165,4 +174,13 @@ def parse_args(subparsers):
         required=False,
         dest='network'
     )
+    
+    #----------------------------------------------------------
+    # list
+    #----------------------------------------------------------
+    subparsers_lsit = relay_parser.add_parser(
+        'list',
+        help='To display list of created relay nodes'
+    )
+    subparsers_lsit.set_defaults(func=handle_relay_list)
 
