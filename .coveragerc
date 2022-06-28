@@ -6,8 +6,7 @@ source = csc_docker_pool
 
 [paths]
 source =
-    src/
-    */site-packages/
+    src/csc_docker_pool
 
 [report]
 # Regexes for lines to exclude from consideration
