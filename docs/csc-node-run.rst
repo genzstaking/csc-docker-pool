@@ -99,6 +99,13 @@ with the option --syncmode full. We have assigned P2P seed Node in cetd by defau
 
 You can change and assign trusted Seed Nodes via --bootnodes options.
 
+Now use the following command to list all initialized node:
+
+..code-block::bash
+
+  genz-cetd-pool \
+    relay lsit
+
 Configuration
 -------------------------------------------------------------------------------
 
@@ -107,6 +114,8 @@ configuration into the binary package 'cetd' file so that everyone can start wit
 any configuration. For professional users, you can refer to the following 
 configuration, optimize the configuration, and then start the command as: cetd 
 --config ./<your config file>
+
+TODO: support custom config
 
 eg：testnet config
 assets/testnet.config

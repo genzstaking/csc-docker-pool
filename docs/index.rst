@@ -29,6 +29,9 @@ Contents
    csc-genesis-block.rst
    csc-node-run.rst
    csc-node-run.rst
+   
+   csc-validator.rst
+   
    Contributions & Help <contributing>
    License <license>
    Authors <authors>
