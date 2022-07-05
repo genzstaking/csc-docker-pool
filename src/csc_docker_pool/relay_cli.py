@@ -84,8 +84,11 @@ def handle_relay_run(args):
         exit(1)
         
     options = "--datadir /root"
-    # TODO: maso, 2022: to support --syncmod
-    
+    if 'bootnodes' in args and args.bootnodes != None:
+        options = "--bootnodes " + ",".join(args.bootnodes)
+    if 'syncmod' in args:
+        options = "--syncmod " + args.syncmod[0]
+
     relay.start_time = int(time.time())
     _logger.info("Running ghcr.io/genz-bank/cetd container for node {}".format(args.name))
     container = client.containers.run(
@@ -173,6 +176,14 @@ def parse_args(subparsers):
         choices=['fast', 'full', 'light'],
         required=False,
         dest='network'
+    )
+    subparsers_run.add_argument(
+        '--bootnodes',
+        help='Comma separated enode URLs for P2P discovery bootstrap',
+        nargs=1,
+        type=str,
+        required=False,
+        dest='bootnodes'
     )
     
     #----------------------------------------------------------
