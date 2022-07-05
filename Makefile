@@ -28,6 +28,8 @@ help:
 all: $(SUBDIRS)
 clean: $(SUBDIRS)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) clean
+publish: $(SUBDIRS)
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) publish
 force:
 
 $(SUBDIRS):force

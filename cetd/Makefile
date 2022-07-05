@@ -17,6 +17,10 @@ all: $(VERSIONS)
 clean:
 cli: all
 force:
+publish: $(VERSIONS)
+	docker push ghcr.io/genz-bank/cetd:latest 
+	docker push ghcr.io/genz-bank/cetd:$(VERSIONS)
+	
 
 $(SUBDIRS):force
 	$(MAKE) -C $@ $(MAKECMDGOALS)
@@ -25,8 +29,8 @@ $(SUBDIRS):force
 $(VERSIONS): force
 	@$(DOCKER_BUILD) Dockerfile \
 		--build-arg VERSION=$@ \
-		--tag genzbank/cetd:$@ \
-		--tag genzbank/cetd:latest .
+		--tag ghcr.io/genz-bank/cetd:$@ \
+		--tag ghcr.io/genz-bank/cetd:latest .
 
 
 

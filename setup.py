@@ -8,11 +8,20 @@
 """
 from setuptools import setup
 
+
+def local_scheme(version):
+    return ""
+
+
 if __name__ == "__main__":
     try:
-        setup(use_scm_version={
-            "version_scheme": "no-guess-dev"
-        })
+        setup(
+            use_scm_version={
+                "root": ".",
+                "local_scheme": local_scheme
+            },
+            setup_requires=['setuptools_scm']
+        )
     except:  # noqa
         print(
             "\n\nAn error occurred while building the project, "

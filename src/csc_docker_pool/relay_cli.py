@@ -45,9 +45,9 @@ def handle_relay_init(args):
         _logger.critical(msg="Node {} was initialized before. Remove node and init it again.".format(args.name))
         exit(1)
     
-    _logger.info("Running genzbank/cetd container to init node {}".format(args.name))
+    _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(args.name))
     output = client.containers.run(
-        "genzbank/cetd",
+        "ghcr.io/genz-bank/cetd",
         options,
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
@@ -68,7 +68,7 @@ def handle_relay_init(args):
 def handle_relay_run(args):
     _logger.info("Running the relay node {}".format(args.name))
     
-    _logger.debug("Loading docker from environment")
+    _logger.info("Loading docker from environment")
     try:
         client = docker.from_env()
     except:
@@ -77,7 +77,7 @@ def handle_relay_run(args):
         
     path = os.getcwd() + '/' + args.name;
     # TODO: convert this part to is_node
-    _logger.debug("Check the node folder {}".format(path))
+    _logger.info("Check the node folder {}".format(path))
     relay = create_relay_node(path)
     if not relay.is_initialized:
         _logger.critical(msg="Node is not initialized! use `csc-docker-pool relay --name {} init`  to initialize the node.".format(args.name))
@@ -87,9 +87,9 @@ def handle_relay_run(args):
     # TODO: maso, 2022: to support --syncmod
     
     relay.start_time = int(time.time())
-    _logger.info("Running genzbank/cetd container to init node {}".format(args.name))
+    _logger.info("Running ghcr.io/genz-bank/cetd container for node {}".format(args.name))
     container = client.containers.run(
-        "genzbank/cetd",
+        "ghcr.io/genz-bank/cetd",
         options,
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
@@ -101,7 +101,7 @@ def handle_relay_run(args):
     process = container.logs(stream=True, follow=True)
     for lines in process:
         for line in codecs.decode(lines).splitlines():
-            _logger.debug(" container>" + line)
+            _logger.info(" container>" + line)
     # Svae relay node state
     relay.end_time = int(time.time())
     relay.save()
