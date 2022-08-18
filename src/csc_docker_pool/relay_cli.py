@@ -123,8 +123,14 @@ def parse_args(subparsers):
         help='Manages a relay node'
     )
     relay_parser = parser.add_subparsers(
-        title="Manages relay node",
-        description="A relay node sync DB with the network. This command help you to manage a node."
+        title="Relay Nodes Management",
+        description="""
+        A relay node sync DB with the network.
+        On the other hand, a relay node is an edge node and connects to other nodes on the
+        network. It fetch/push new blocks and keeps the ledger update.
+        This command helps you to setup, manage and maintain a node over the network.
+        You may have multiple relay node at the same time, where each of which deals with 
+        and specific network. For example a node to keeps testnet data."""
     )
     parser.set_defaults(func=handle_relay)
     

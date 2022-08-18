@@ -12,6 +12,7 @@ from csc_docker_pool import __version__
 import csc_docker_pool.wallet_cli as wallet_cli
 import csc_docker_pool.config_cli as config_cli
 import csc_docker_pool.relay_cli as relay_cli
+import csc_docker_pool.staking_cli as staking_cli
 
 __author__ = "maso"
 __copyright__ = "maso"
@@ -38,7 +39,12 @@ def parse_args(args):
     parser = argparse.ArgumentParser(
         prog="GenZ Bank CSC Pool Manager",
         usage="genz-csc-pool",
-        description="GenZ Bank CSC Pool Manager and utilities",
+        description="""GenZ Bank CSC Pool Manager and utilities to setup, manage and
+        maintain CSC full node. It makes easy to create new wallet, bind address to a
+        node and gain CET.
+        Based on PoS consensus protocol, CoinEx Smart Chain is decentralized and energy 
+        efficient. CSC makes it easy to build your own decentralized applications.
+        """,
         add_help=True,
         allow_abbrev=True,
         exit_on_error=True
@@ -73,6 +79,7 @@ def parse_args(args):
     wallet_cli.parse_args(subparsers)
     config_cli.parse_args(subparsers)
     relay_cli.parse_args(subparsers)
+    staking_cli.parse_args(subparsers)
     
     return parser.parse_args(args)
 
