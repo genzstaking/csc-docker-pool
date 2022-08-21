@@ -9,6 +9,39 @@ import pandas
 
 _logger = logging.getLogger(__name__)
 
+def generate_metrics_options(relay, args):
+    """
+    Enables metrics options of the node
+    """
+    options = ""
+    
+    # runtime options are much more important
+    src = relay
+    if args.metrics is not None:
+        src = args
+    
+    if src.metrics == "none":
+        _logger.info("Metric is disabled")
+    elif src.metrics == "influxdb":
+        _logger.info("Metrics well be reported to an InfluxDB")
+        options = """
+            --metrics 
+            --metrics.influxdb
+            --metrics.influxdb.endpoint  "{}" 
+            --metrics.influxdb.database  "{}" 
+            --metrics.influxdb.username  "{}" 
+            --metrics.influxdb.password  "{}"
+            --metrics.influxdb.tags      "{}"
+        """.format(
+            src.metrics_influxdb_endpoint,
+            src.metrics_influxdb_database,
+            src.metrics_influxdb_username,
+            src.metrics_influxdb_password,
+            "host="+ relay.name)
+    else:
+        _logger.error("We just support influxdb report")
+        exit(2)
+    return options
 
 def handle_relay(args):
     _logger.info("Start handling relay command")
@@ -62,6 +95,12 @@ def handle_relay_init(args):
     relay.is_initialized = True
     relay.network = args.network[0]
     relay.name = args.name
+    # Metrics (simple copy)
+    relay.metrics = args.metrics
+    relay.metrics_influxdb_endpoint = args.metrics_influxdb_endpoint
+    relay.metrics_influxdb_database = args.metrics_influxdb_database
+    relay.metrics_influxdb_username = args.metrics_influxdb_username
+    relay.metrics_influxdb_password = args.metrics_influxdb_password
     relay.save()
 
 
@@ -88,6 +127,8 @@ def handle_relay_run(args):
         options = "--bootnodes " + ",".join(args.bootnodes)
     if 'syncmod' in args:
         options = "--syncmod " + args.syncmod[0]
+        
+    options = options + generate_metrics_options(relay, args)
 
     relay.start_time = int(time.time())
     _logger.info("Running ghcr.io/genz-bank/cetd container for node {}".format(args.name))
@@ -159,6 +200,47 @@ def parse_args(subparsers):
         default='main'
     )
     
+    subparsers_init.add_argument(
+        '--metrics',
+        help='This option enables the reporting system.',
+        default='none',
+        type=str,
+        choices=['none', 'influxdb'],
+        required=False,
+        dest='metrics'
+    )
+    subparsers_init.add_argument(
+        '--metrics.influxdb.endpoint',
+        help='The address of the InfluxDB server, e.g. http://localhost:8086.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_endpoint',
+        default='http://localhost:8086'
+    )
+    subparsers_init.add_argument(
+        '--metrics.influxdb.database',
+        help='The name of database in InfluxDB.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_database',
+        default='csc'
+    )
+    subparsers_init.add_argument(
+        '--metrics.influxdb.username',
+        help='InfluxDB username.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_username',
+        default='csc'
+    )
+    subparsers_init.add_argument(
+        '--metrics.influxdb.password',
+        help='InfluxDB password.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_password'
+    )
+    
     #----------------------------------------------------------
     # run
     #----------------------------------------------------------
@@ -192,6 +274,46 @@ def parse_args(subparsers):
         dest='bootnodes'
     )
     
+    subparsers_run.add_argument(
+        '--metrics',
+        help='This option enables the reporting system.',
+        default=None,
+        type=str,
+        choices=['none', 'influxdb'],
+        required=False,
+        dest='metrics'
+    )
+    subparsers_run.add_argument(
+        '--metrics.influxdb.endpoint',
+        help='The address of the InfluxDB server, e.g. http://localhost:8086.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_endpoint',
+        default='http://localhost:8086'
+    )
+    subparsers_run.add_argument(
+        '--metrics.influxdb.database',
+        help='The name of database in InfluxDB.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_database',
+        default='csc'
+    )
+    subparsers_run.add_argument(
+        '--metrics.influxdb.username',
+        help='InfluxDB username.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_username',
+        default='csc'
+    )
+    subparsers_run.add_argument(
+        '--metrics.influxdb.password',
+        help='InfluxDB password.',
+        type=str,
+        required=False,
+        dest='metrics_influxdb_password'
+    )
     #----------------------------------------------------------
     # list
     #----------------------------------------------------------
