@@ -60,7 +60,6 @@ def is_relay_node(path):
     # TODO: maso, 2022: add more condition to check if it is a relay node
     return True
 
-
 def create_relay_node(path):
     """ Creates new Relay object
     

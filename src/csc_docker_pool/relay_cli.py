@@ -6,8 +6,55 @@ from builtins import IOError, FileNotFoundError
 from csc_docker_pool.relay import is_relay_node, create_relay_node
 import time
 import pandas
+import random
 
 _logger = logging.getLogger(__name__)
+
+
+def check_relay_node_initialized(relay):
+    _logger.info("Check the node folder {}".format(relay.path))
+    if not relay.is_initialized:
+        _logger.critical(msg="Node is not initialized! use `csc-docker-pool relay --name {} init`  to initialize the node.".format(relay.name))
+        exit(1)
+
+
+def load_docker():
+    _logger.info("Loading docker from environment")
+    try:
+        client = docker.from_env()
+    except:
+        _logger.critical(msg="Fail to load docker from environment. Check if it is installed and run")
+        exit(1)
+    return client
+
+
+def redirect_container_logs(container, args):
+    if args.loglevel in [ logging.DEBUG, logging.INFO ]:
+        process = container.logs(stream=True, follow=True)
+        for lines in process:
+            for line in codecs.decode(lines).splitlines():
+                _logger.info(" container>" + line)
+
+
+def generate_data_dir_options(relay, args):
+    return "--datadir /root"
+
+
+def generate_bootnodes_options(relay, args):
+    options = ""
+    if 'bootnodes' in args and args.bootnodes != None:
+        options = "--bootnodes " + ",".join(args.bootnodes)
+    elif relay.bootnodes != None:
+        options = "--bootnodes " + ",".join(args.bootnodes)
+    return options
+
+
+def generate_syncmod_options(relay, args):
+    options = ""
+    if 'syncmod' in args:
+        options = "--syncmod " + args.syncmod[0]
+    return options
+
 
 def generate_metrics_options(relay, args):
     """
@@ -37,12 +84,15 @@ def generate_metrics_options(relay, args):
             src.metrics_influxdb_database,
             src.metrics_influxdb_username,
             src.metrics_influxdb_password,
-            "host="+ relay.name)
+            "host=" + generate_relay_name(relay))
     else:
         _logger.error("We just support influxdb report")
         exit(2)
     return options
 
+def generate_relay_name(relay):
+    return "csc_relay_" + relay.name + "_" + relay.id
+    
 def handle_relay(args):
     _logger.info("Start handling relay command")
     
@@ -51,13 +101,7 @@ def handle_relay(args):
 
 def handle_relay_init(args):
     _logger.info("Start handling relay init command")
-    
-    _logger.debug("Loading docker from environment")
-    try:
-        client = docker.from_env()
-    except:
-        _logger.critical(msg="Fail to load docker from environment. Check if it is installed and run")
-        exit(1)
+    client = load_docker()
     
     if args.network[0] == 'main':
         options = "--datadir /root {}".format(
@@ -79,22 +123,23 @@ def handle_relay_init(args):
         exit(1)
     
     _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(args.name))
-    output = client.containers.run(
-        "ghcr.io/genz-bank/cetd",
-        options,
+    container = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
         working_dir="/root",
         stderr=True,
         stdout=True,
+        detach=True,
     )
-    for line in codecs.decode(output).splitlines():
-        _logger.debug(" container>" + line)
+    redirect_container_logs(container, args)
     
     _logger.info("Node {} is initialized with default configuration".format(args.name))
     relay.is_initialized = True
     relay.network = args.network[0]
     relay.name = args.name
+    relay.id = str(random.randint(100000000, 1000000000))
     # Metrics (simple copy)
     relay.metrics = args.metrics
     relay.metrics_influxdb_endpoint = args.metrics_influxdb_endpoint
@@ -107,34 +152,22 @@ def handle_relay_init(args):
 def handle_relay_run(args):
     _logger.info("Running the relay node {}".format(args.name))
     
-    _logger.info("Loading docker from environment")
-    try:
-        client = docker.from_env()
-    except:
-        _logger.critical(msg="Fail to load docker from environment. Check if it is installed and run")
-        exit(1)
+    relay = create_relay_node(os.getcwd() + '/' + args.name)
+    check_relay_node_initialized(relay)
+    client = load_docker()
         
-    path = os.getcwd() + '/' + args.name;
-    # TODO: convert this part to is_node
-    _logger.info("Check the node folder {}".format(path))
-    relay = create_relay_node(path)
-    if not relay.is_initialized:
-        _logger.critical(msg="Node is not initialized! use `csc-docker-pool relay --name {} init`  to initialize the node.".format(args.name))
-        exit(1)
-        
-    options = "--datadir /root"
-    if 'bootnodes' in args and args.bootnodes != None:
-        options = "--bootnodes " + ",".join(args.bootnodes)
-    if 'syncmod' in args:
-        options = "--syncmod " + args.syncmod[0]
-        
-    options = options + generate_metrics_options(relay, args)
+    options = "".join([
+        generate_data_dir_options(relay, args),
+        generate_bootnodes_options(relay, args),
+        generate_syncmod_options(relay, args),
+        generate_metrics_options(relay, args)
+    ])
 
-    relay.start_time = int(time.time())
     _logger.info("Running ghcr.io/genz-bank/cetd container for node {}".format(args.name))
     container = client.containers.run(
-        "ghcr.io/genz-bank/cetd",
-        options,
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        name= generate_relay_name(relay),
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
         working_dir="/root",
@@ -142,22 +175,16 @@ def handle_relay_run(args):
         stdout=True,
         detach=True,
     )
-    process = container.logs(stream=True, follow=True)
-    for lines in process:
-        for line in codecs.decode(lines).splitlines():
-            _logger.info(" container>" + line)
-    # Svae relay node state
-    relay.end_time = int(time.time())
     relay.save()
+    redirect_container_logs(container, args)
 
-    
+
 def handle_relay_list(args):
     root_path = os.getcwd()
     nodes = [ create_relay_node(f.path).__dict__ for f in os.scandir(root_path) if f.is_dir() and is_relay_node(f.path) ]
-    frame = pandas.DataFrame(nodes, columns=['name', 'network', 'is_initialized'])
+    frame = pandas.DataFrame(nodes, columns=['id', 'name', 'network', 'is_initialized'])
     print(frame)
 
-    
 def parse_args(subparsers):
     parser = subparsers.add_parser(
         'relay',
