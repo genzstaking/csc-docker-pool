@@ -11,12 +11,6 @@ import random
 _logger = logging.getLogger(__name__)
 
 
-def redirect_container_output(container):
-    process = container.logs(stream=True, follow=True)
-    for lines in process:
-        for line in codecs.decode(lines).splitlines():
-            print(line)
-    
 def redirect_container_logs(container, args):
     if args.loglevel in [ logging.DEBUG, logging.INFO ]:
         process = container.logs(stream=True, follow=True)
@@ -58,17 +52,14 @@ def handle_wallet_list(args):
     ])
     
     _logger.info("Running ghcr.io/genz-bank/cetd container to list accounts")
-    container = client.containers.run(
+    output = client.containers.run(
         image="ghcr.io/genz-bank/cetd",
         command=options,
         user=os.getuid(),
         volumes=[os.getcwd() + ":/root"],
         working_dir="/root",
-        stderr=True,
-        stdout=True,
-        detach=True,
     )
-    redirect_container_output(container)
+    print(output.decode('utf-8'))
 
 def handle_wallet_new(args):
     _logger.info("Start handling relay init command")
