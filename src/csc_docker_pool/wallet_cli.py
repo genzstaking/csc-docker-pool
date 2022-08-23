@@ -39,10 +39,10 @@ def generate_passowrd_file_options(args):
     with open("{}/{}/password.txt".format(os.getcwd(), args.name), 'w') as f:
         f.write(args.password)
     return "--password /root/{}/password.txt ".format(args.name)
-    
+
 
 def handle_wallet_list(args):
-    _logger.info("Start handling relay init command")
+    _logger.info("Start handling wallet list command")
     client = load_docker()
     _logger.info("Getting list of wallets (accounts) in node {}".format(args.name))
     # Command options
@@ -62,7 +62,7 @@ def handle_wallet_list(args):
     print(output.decode('utf-8'))
 
 def handle_wallet_new(args):
-    _logger.info("Start handling relay init command")
+    _logger.info("Start handling wallet new command")
     client = load_docker()
     _logger.info("Getting list of wallets (accounts) in node {}".format(args.name))
         
@@ -85,6 +85,29 @@ def handle_wallet_new(args):
         detach=True,
     )
     redirect_container_logs(container, args)
+
+
+def handle_wallet_import(args):
+    _logger.info("Start handling wallet import command")
+    client = load_docker()
+    _logger.info("Getting list of wallets (accounts) in node {}".format(args.name))
+    # Command options
+    options = "".join([
+        "account  list ",
+        generate_data_dir_options(args),
+        # XXX: maso, 2022: move key file into a volume
+        args.keyfile
+    ])
+    
+    _logger.info("Running ghcr.io/genz-bank/cetd container to list accounts")
+    output = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        user=os.getuid(),
+        volumes=[os.getcwd() + ":/root"],
+        working_dir="/root",
+    )
+    print(output.decode('utf-8'))
     
 def parse_args(subparsers):
     #----------------------------------------------------------
@@ -140,3 +163,39 @@ def parse_args(subparsers):
         dest='password',
     )
     wallet_new.set_defaults(func=handle_wallet_new)
+    
+    #----------------------------------------------------------
+    # new
+    #----------------------------------------------------------
+    wallet_import = wallet_parser.add_parser(
+        'import',
+        help = "Imports an unencrypted private key and creates a new account.",
+        description="""
+            Imports an unencrypted private key from <keyfile> and creates a new account.
+            
+            NOTE: As you can directly copy your encrypted accounts to another ethereum instance,
+            this import mechanism is not needed when you transfer an account between
+            nodes.
+            """
+    )
+    wallet_import.add_argument(
+        '--name',
+        help='The name of a node (in each node there are many wallets)',
+        dest='name',
+        default='main'
+    )
+    wallet_import.add_argument(
+        '--password',
+        help='The password that protect keystore',
+        type=str,
+        required=True,
+        dest='password',
+    )
+    wallet_import.add_argument(
+        '--keyfile',
+        help='The keyfile is assumed to contain an unencrypted private key in hexadecimal format.',
+        type=str,
+        required=True,
+        dest='keyfile',
+    )
+    wallet_import.set_defaults(func=handle_wallet_import)
