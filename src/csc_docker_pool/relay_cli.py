@@ -3,125 +3,34 @@ import docker
 import os
 import codecs
 from builtins import IOError, FileNotFoundError
-from csc_docker_pool.relay import is_relay_node, create_relay_node
 import time
 import pandas
 import random
 
+from csc_docker_pool.node import *
+from csc_docker_pool.docker_util import *
+from csc_docker_pool.args_util import *
+
+
 _logger = logging.getLogger(__name__)
 
 
-def check_relay_node_initialized(relay):
-    _logger.info("Check the node folder {}".format(relay.path))
-    if not relay.is_initialized:
-        _logger.critical(msg="Node is not initialized! use `csc-docker-pool relay --name {} init`  to initialize the node.".format(relay.name))
-        exit(1)
-
-
-def load_docker():
-    _logger.info("Loading docker from environment")
-    try:
-        client = docker.from_env()
-    except:
-        _logger.critical(msg="Fail to load docker from environment. Check if it is installed and run")
-        exit(1)
-    return client
-
-
-def redirect_container_logs(container, args):
-    if args.loglevel in [ logging.DEBUG, logging.INFO ]:
-        process = container.logs(stream=True, follow=True)
-        for lines in process:
-            for line in codecs.decode(lines).splitlines():
-                _logger.info(" container>" + line)
-
-
-def generate_data_dir_options(relay, args):
-    return "--datadir /root"
-
-
-def generate_bootnodes_options(relay, args):
-    options = ""
-    if 'bootnodes' in args and args.bootnodes != None:
-        options = "--bootnodes " + ",".join(args.bootnodes)
-    elif relay.bootnodes != None:
-        options = "--bootnodes " + ",".join(args.bootnodes)
-    return options
-
-
-def generate_syncmod_options(relay, args):
-    options = ""
-    if 'syncmod' in args:
-        options = "--syncmod " + args.syncmod[0]
-    return options
-
-
-def generate_metrics_options(relay, args):
-    """
-    Enables metrics options of the node
-    """
-    options = ""
-    
-    # runtime options are much more important
-    src = relay
-    if args.metrics is not None:
-        src = args
-    
-    if src.metrics == "none":
-        _logger.info("Metric is disabled")
-    elif src.metrics == "influxdb":
-        _logger.info("Metrics well be reported to an InfluxDB")
-        options = """
-            --metrics 
-            --metrics.influxdb
-            --metrics.influxdb.endpoint  "{}" 
-            --metrics.influxdb.database  "{}" 
-            --metrics.influxdb.username  "{}" 
-            --metrics.influxdb.password  "{}"
-            --metrics.influxdb.tags      "{}"
-        """.format(
-            src.metrics_influxdb_endpoint,
-            src.metrics_influxdb_database,
-            src.metrics_influxdb_username,
-            src.metrics_influxdb_password,
-            "host=" + generate_relay_name(relay))
-    else:
-        _logger.error("We just support influxdb report")
-        exit(2)
-    return options
-
-def generate_relay_name(relay):
-    return "csc_relay_" + relay.name + "_" + relay.id
-    
-def handle_relay(args):
-    _logger.info("Start handling relay command")
-    
-    print('relay handler')
-
-
 def handle_relay_init(args):
-    _logger.info("Start handling relay init command")
+    #----- Load tools
+    _logger.info("Start initialization of a relay node")
     client = load_docker()
+    node = create_node_with_name(args)
     
-    if args.network[0] == 'main':
-        options = "--datadir /root {}".format(
-            'init'
-        )
-    else:
-        options = "--datadir /root --testnet {}".format(
-            'init'
-        )
-    if args.loglevel in [logging.INFO, logging.DEBUG]:
-        options = "--debug " + options 
+    #----- Generates options
+    options = "".join([
+        generate_data_dir_options(node, args),
+        generate_chain_options(node, args),
+        'init',
+        generate_logging_options(node, args),
+    ])
+    
+    #----- Run a docker
     _logger.debug("Command cetd {}".format(options))
-    
-    path = os.getcwd() + '/' + args.name;
-    _logger.debug("Check the node folder {}".format(path))
-    relay = create_relay_node(path)
-    if relay.is_initialized:
-        _logger.critical(msg="Node {} was initialized before. Remove node and init it again.".format(args.name))
-        exit(1)
-    
     _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(args.name))
     container = client.containers.run(
         image="ghcr.io/genz-bank/cetd",
@@ -129,48 +38,62 @@ def handle_relay_init(args):
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
         working_dir="/root",
+        auto_remove=True,
+        remove=True,
         stderr=True,
         stdout=True,
         detach=True,
     )
     redirect_container_logs(container, args)
     
+    #----- Save changes
     _logger.info("Node {} is initialized with default configuration".format(args.name))
     relay.is_initialized = True
-    relay.network = args.network[0]
-    relay.name = args.name
-    relay.id = str(random.randint(100000000, 1000000000))
-    # Metrics (simple copy)
-    relay.metrics = args.metrics
-    relay.metrics_influxdb_endpoint = args.metrics_influxdb_endpoint
-    relay.metrics_influxdb_database = args.metrics_influxdb_database
-    relay.metrics_influxdb_username = args.metrics_influxdb_username
-    relay.metrics_influxdb_password = args.metrics_influxdb_password
     relay.save()
+
+
+def handle_relay_stop(args):
+    _logger.info("Stops the relay node {}".format(args.name))
+    relay = create_relay_node(os.getcwd() + '/' + args.name)
+    client = load_docker()
+    container_name = generate_relay_name(relay)
+    try:
+        container = client.containers.get(container_name)
+        container.remove(force=True)
+    except docker.errors.NotFound:
+        _logger.info("The relay not not exist")
+        return False
+    except docker.errors.APIError:
+        _logger.critical(msg="Fail to load docker from environment. Check if it is installed and run")
+        exit(1)
 
 
 def handle_relay_run(args):
     _logger.info("Running the relay node {}".format(args.name))
-    
     relay = create_relay_node(os.getcwd() + '/' + args.name)
     check_relay_node_initialized(relay)
     client = load_docker()
-        
+    
     options = "".join([
         generate_data_dir_options(relay, args),
         generate_bootnodes_options(relay, args),
         generate_syncmod_options(relay, args),
-        generate_metrics_options(relay, args)
+        generate_metrics_options(relay, args),
+        generate_rpc_http_options(relay, args)
     ])
 
     _logger.info("Running ghcr.io/genz-bank/cetd container for node {}".format(args.name))
+    if docker_is_running(generate_relay_name(relay)):
+        handle_relay_stop(args)
     container = client.containers.run(
         image="ghcr.io/genz-bank/cetd",
         command=options,
-        name= generate_relay_name(relay),
+        name=generate_relay_name(relay),
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
         working_dir="/root",
+        auto_remove=True,
+        remove=True,
         stderr=True,
         stdout=True,
         detach=True,
@@ -181,9 +104,10 @@ def handle_relay_run(args):
 
 def handle_relay_list(args):
     root_path = os.getcwd()
-    nodes = [ create_relay_node(f.path).__dict__ for f in os.scandir(root_path) if f.is_dir() and is_relay_node(f.path) ]
+    nodes = [ create_relay_node(f.path).__dict__ for f in os.scandir(root_path) if f.is_dir() and is_node(f.path) ]
     frame = pandas.DataFrame(nodes, columns=['id', 'name', 'network', 'is_initialized'])
     print(frame)
+
 
 def parse_args(subparsers):
     parser = subparsers.add_parser(
@@ -200,150 +124,38 @@ def parse_args(subparsers):
         You may have multiple relay node at the same time, where each of which deals with 
         and specific network. For example a node to keeps testnet data."""
     )
-    parser.set_defaults(func=handle_relay)
     
-    #----------------------------------------------------------
-    # init
-    #----------------------------------------------------------
+    #---- init
     subparsers_init = relay_parser.add_parser(
         'init',
         help='Initialize the relay node'
     )
     subparsers_init.set_defaults(func=handle_relay_init)
-    subparsers_init.add_argument(
-        '--network',
-        help='The name of the network (main, or test)',
-        nargs=1,
-        default='main',
-        type=str,
-        choices=['main', 'test'],
-        required=False,
-        dest='network'
-    )
-    subparsers_init.add_argument(
-        '--name',
-        help='target wallet name',
-        dest='name',
-        default='main'
-    )
+    add_chain_arguments(subparsers_init)
+    add_name_arguments(subparsers_init)
+    add_metric_arguments(subparsers_init)
     
-    subparsers_init.add_argument(
-        '--metrics',
-        help='This option enables the reporting system.',
-        default='none',
-        type=str,
-        choices=['none', 'influxdb'],
-        required=False,
-        dest='metrics'
-    )
-    subparsers_init.add_argument(
-        '--metrics.influxdb.endpoint',
-        help='The address of the InfluxDB server, e.g. http://localhost:8086.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_endpoint',
-        default='http://localhost:8086'
-    )
-    subparsers_init.add_argument(
-        '--metrics.influxdb.database',
-        help='The name of database in InfluxDB.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_database',
-        default='csc'
-    )
-    subparsers_init.add_argument(
-        '--metrics.influxdb.username',
-        help='InfluxDB username.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_username',
-        default='csc'
-    )
-    subparsers_init.add_argument(
-        '--metrics.influxdb.password',
-        help='InfluxDB password.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_password'
-    )
-    
-    #----------------------------------------------------------
-    # run
-    #----------------------------------------------------------
+    #---- run
     subparsers_run = relay_parser.add_parser(
         'run',
         help='Run the relay node'
     )
     subparsers_run.set_defaults(func=handle_relay_run)
-    subparsers_run.add_argument(
-        '--name',
-        help='target wallet name',
-        dest='name',
-        default='main'
-    )
-    subparsers_run.add_argument(
-        '--syncmode',
-        help='Sets the mode in DB sync (full, ..)',
-        nargs=1,
-        default='fast',
-        type=str,
-        choices=['fast', 'full', 'light'],
-        required=False,
-        dest='network'
-    )
-    subparsers_run.add_argument(
-        '--bootnodes',
-        help='Comma separated enode URLs for P2P discovery bootstrap',
-        nargs=1,
-        type=str,
-        required=False,
-        dest='bootnodes'
-    )
+    add_name_arguments(subparsers_run)
+    add_metric_arguments(subparsers_run)
+    # TODO: maso, 2022: Map these options to abstract models
+    add_syncmode_arguments(subparsers_run)
+    add_bootnodes_arguments(subparsers_run)
     
-    subparsers_run.add_argument(
-        '--metrics',
-        help='This option enables the reporting system.',
-        default=None,
-        type=str,
-        choices=['none', 'influxdb'],
-        required=False,
-        dest='metrics'
+    #------ stop
+    relay_stop = relay_parser.add_parser(
+        'stop',
+        help='Stop a relay node'
     )
-    subparsers_run.add_argument(
-        '--metrics.influxdb.endpoint',
-        help='The address of the InfluxDB server, e.g. http://localhost:8086.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_endpoint',
-        default='http://localhost:8086'
-    )
-    subparsers_run.add_argument(
-        '--metrics.influxdb.database',
-        help='The name of database in InfluxDB.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_database',
-        default='csc'
-    )
-    subparsers_run.add_argument(
-        '--metrics.influxdb.username',
-        help='InfluxDB username.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_username',
-        default='csc'
-    )
-    subparsers_run.add_argument(
-        '--metrics.influxdb.password',
-        help='InfluxDB password.',
-        type=str,
-        required=False,
-        dest='metrics_influxdb_password'
-    )
-    #----------------------------------------------------------
-    # list
-    #----------------------------------------------------------
+    relay_stop.set_defaults(func=handle_relay_stop)
+    add_name_arguments(relay_stop)
+
+    #------ list
     subparsers_lsit = relay_parser.add_parser(
         'list',
         help='To display list of created relay nodes'

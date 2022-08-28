@@ -3,52 +3,26 @@ import docker
 import os
 import codecs
 from builtins import IOError, FileNotFoundError
-from csc_docker_pool.relay import is_relay_node, create_relay_node
 import time
 import pandas
 import random
 
+from csc_docker_pool.node import *
+from csc_docker_pool.docker_util import *
+from csc_docker_pool.args_util import *
+
 _logger = logging.getLogger(__name__)
 
 
-def redirect_container_logs(container, args):
-    if args.loglevel in [ logging.DEBUG, logging.INFO ]:
-        process = container.logs(stream=True, follow=True)
-        for lines in process:
-            for line in codecs.decode(lines).splitlines():
-                _logger.info(" container>" + line)
-
-
-def load_docker():
-    _logger.info("Loading docker from environment")
-    try:
-        client = docker.from_env()
-    except:
-        _logger.critical(msg="Fail to load docker from environment. Check if it is installed and run")
-        exit(1)
-    return client
-
-
-def generate_data_dir_options(args):
-    root_path = os.getcwd() + "/" + args.name
-    if not os.path.isdir(root_path):
-        os.mkdir(root_path)
-    return "--datadir /root/{} ".format(args.name)
-
-def generate_passowrd_file_options(args):
-    with open("{}/{}/password.txt".format(os.getcwd(), args.name), 'w') as f:
-        f.write(args.password)
-    return "--password /root/{}/password.txt ".format(args.name)
-
-
 def handle_wallet_list(args):
-    _logger.info("Start handling wallet list command")
-    client = load_docker()
     _logger.info("Getting list of wallets (accounts) in node {}".format(args.name))
+    
+    client = load_docker()
+    node = load_node_with_name(args)
     # Command options
     options = "".join([
         "account  list ",
-        generate_data_dir_options(args)
+        generate_node_dir_options(node, args)
     ])
     
     _logger.info("Running ghcr.io/genz-bank/cetd container to list accounts")
@@ -64,13 +38,14 @@ def handle_wallet_list(args):
 def handle_wallet_new(args):
     _logger.info("Start handling wallet new command")
     client = load_docker()
-    _logger.info("Getting list of wallets (accounts) in node {}".format(args.name))
+    node = load_node_with_name(args)
+    _logger.info("Getting list of wallets (accounts) in node {}".format(node.name))
         
     # Command options
     options = "".join([
         "account  new ",
-        generate_data_dir_options(args),
-        generate_passowrd_file_options(args),
+        generate_node_dir_options(node, args),
+        generate_passowrd_file_options(node, args),
     ])
     
     _logger.info("Running ghcr.io/genz-bank/cetd container to list accounts")
@@ -90,11 +65,12 @@ def handle_wallet_new(args):
 def handle_wallet_import(args):
     _logger.info("Start handling wallet import command")
     client = load_docker()
+    node = load_node_with_name(args)
     _logger.info("Getting list of wallets (accounts) in node {}".format(args.name))
     # Command options
     options = "".join([
         "account  list ",
-        generate_data_dir_options(args),
+        generate_node_dir_options(args),
         # XXX: maso, 2022: move key file into a volume
         args.keyfile
     ])
@@ -110,9 +86,6 @@ def handle_wallet_import(args):
     print(output.decode('utf-8'))
     
 def parse_args(subparsers):
-    #----------------------------------------------------------
-    # Wallet
-    #----------------------------------------------------------
     parser = subparsers.add_parser(
         'wallet',
         help='Manages wallets/accounts.'
@@ -125,44 +98,23 @@ def parse_args(subparsers):
         """
     )
     
-    #----------------------------------------------------------
-    # list
-    #----------------------------------------------------------
+    #---------- list
     wallet_lsit = wallet_parser.add_parser(
         'list',
         help='To display list of created wallets'
     )
-    wallet_lsit.add_argument(
-        '--name',
-        help='The name of a node (in each node there are many wallets)',
-        dest='name',
-        default='main'
-    )
-    
     wallet_lsit.set_defaults(func=handle_wallet_list)
+    add_name_arguments(wallet_lsit)
     
     
-    #----------------------------------------------------------
-    # new
-    #----------------------------------------------------------
+    #---------- new
     wallet_new = wallet_parser.add_parser(
         'new',
         help='To create a new wallets'
     )
-    wallet_new.add_argument(
-        '--name',
-        help='The name of a node (in each node there are many wallets)',
-        dest='name',
-        default='main'
-    )
-    wallet_new.add_argument(
-        '--password',
-        help='The password that protect keystore',
-        type=str,
-        required=True,
-        dest='password',
-    )
     wallet_new.set_defaults(func=handle_wallet_new)
+    add_name_arguments(wallet_new)
+    add_password_file_arguments(wallet_new)
     
     #----------------------------------------------------------
     # new
@@ -178,24 +130,7 @@ def parse_args(subparsers):
             nodes.
             """
     )
-    wallet_import.add_argument(
-        '--name',
-        help='The name of a node (in each node there are many wallets)',
-        dest='name',
-        default='main'
-    )
-    wallet_import.add_argument(
-        '--password',
-        help='The password that protect keystore',
-        type=str,
-        required=True,
-        dest='password',
-    )
-    wallet_import.add_argument(
-        '--keyfile',
-        help='The keyfile is assumed to contain an unencrypted private key in hexadecimal format.',
-        type=str,
-        required=True,
-        dest='keyfile',
-    )
     wallet_import.set_defaults(func=handle_wallet_import)
+    add_name_arguments(wallet_import)
+    add_password_file_arguments(wallet_import)
+    add_keyfile_arguments(wallet_import)
