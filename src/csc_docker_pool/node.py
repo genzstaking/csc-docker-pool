@@ -1,18 +1,17 @@
 import json
 import os 
-from pkg_resources._vendor.jaraco.text import indent
+import logging
+import random
 
 CONFIG_PATH = "/config.json"
 
+_logger = logging.getLogger(__name__)
 
 class Node():
     
     def __init__(self, path="./cetd"):
         self.path = path
         self.is_initialized = False
-        self.network = 'main'
-        self.name = 'No Name'
-        self.description = 'A CSC relay node'
         self.load()
     
     def load(self):
@@ -31,6 +30,10 @@ class Node():
             json.dump(self.__dict__, file, indent=4)
     
     def __setattr__(self, key, value):
+        if callable(value):
+            raise ValueError("""
+            Forbidden to set a callback function for key {}.
+            """.format(key))
         self.__dict__[key] = value
         return value
     
@@ -55,6 +58,8 @@ class Node():
         if hasattr(args, '__dict__'):
             return self.load_from_args(vars(args))
         for key in args:
+            if callable(args[key]):
+                continue
             self.set(key, args[key])
 
 
@@ -102,8 +107,9 @@ def create_node_with_name(args):
     @params args An argsparser Namespace to set default values.
     @return a new unsaved node
     """
+    name = args.name
     _logger.debug("Checking the node {}".format(name))
-    node = load_node_with_name(name)
+    node = load_node_with_name(args)
     
     if node.is_initialized:
         raise RuntimeError("""
@@ -124,7 +130,6 @@ def load_node_with_name(args):
     
     @param args: command arguments
     """
-    
     name = args.name
     if not name:
         raise RuntimeError("Name must be set to load a node")

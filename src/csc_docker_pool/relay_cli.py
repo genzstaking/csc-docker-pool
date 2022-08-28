@@ -36,7 +36,7 @@ def handle_relay_init(args):
         image="ghcr.io/genz-bank/cetd",
         command=options,
         user=os.getuid(),
-        volumes=[relay.path + ":/root"],
+        volumes=[node.path + ":/root"],
         working_dir="/root",
         auto_remove=True,
         remove=True,
@@ -48,15 +48,16 @@ def handle_relay_init(args):
     
     #----- Save changes
     _logger.info("Node {} is initialized with default configuration".format(args.name))
-    relay.is_initialized = True
-    relay.save()
+    node.is_initialized = True
+    node.type = "csc-realy"
+    node.save()
 
 
 def handle_relay_stop(args):
     _logger.info("Stops the relay node {}".format(args.name))
-    relay = create_relay_node(os.getcwd() + '/' + args.name)
+    node = create_node(os.getcwd() + '/' + args.name)
     client = load_docker()
-    container_name = generate_relay_name(relay)
+    container_name = generate_relay_name(node, args)
     try:
         container = client.containers.get(container_name)
         container.remove(force=True)
@@ -70,8 +71,8 @@ def handle_relay_stop(args):
 
 def handle_relay_run(args):
     _logger.info("Running the relay node {}".format(args.name))
-    relay = create_relay_node(os.getcwd() + '/' + args.name)
-    check_relay_node_initialized(relay)
+    relay = create_node(os.getcwd() + '/' + args.name)
+    check_node_initialized(relay)
     client = load_docker()
     
     options = "".join([
@@ -104,8 +105,8 @@ def handle_relay_run(args):
 
 def handle_relay_list(args):
     root_path = os.getcwd()
-    nodes = [ create_relay_node(f.path).__dict__ for f in os.scandir(root_path) if f.is_dir() and is_node(f.path) ]
-    frame = pandas.DataFrame(nodes, columns=['id', 'name', 'network', 'is_initialized'])
+    nodes = [ create_node(f.path).__dict__ for f in os.scandir(root_path) if f.is_dir() and is_node(f.path) ]
+    frame = pandas.DataFrame(nodes, columns=['id', 'name', 'type', 'network', 'is_initialized'])
     print(frame)
 
 

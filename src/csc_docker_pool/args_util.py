@@ -6,6 +6,19 @@ from builtins import IOError, FileNotFoundError
 import time
 import pandas
 import random
+_logger = logging.getLogger(__name__)
+
+def get_option_value(node, args, key, required=False):
+    val = node.get(key)
+    arg_val = getattr(args, key)
+    if arg_val:
+        val = arg_val
+    if required and not val:
+        raise RuntimeError(msg="""
+        The parameter with name {} is required but defined 
+        neither in the node nor in the args.
+        """.format(key))
+    return val
 
 def generate_staking_options(node, args):
     
@@ -220,7 +233,7 @@ def generate_metrics_options(node, args):
 #                           RPC
 #
 ###########################################################################
-def generate_rpc_http_options(node):
+def generate_rpc_http_options(node, args):
     """
     Here is list of options supported by ETCH
     
@@ -251,11 +264,12 @@ def add_name_arguments(parser):
     )
 
 
-def generate_relay_name(node):
+def generate_relay_name(node, args=None):
     return "csc_relay_" + node.name + "_" + node.id
 
 
-
+def generate_staking_name(node, args=None):
+    return "csc_validator_" + node.name + "_" + node.id
 
 
 #--------------------------- Keystore password file --------------------------
@@ -269,9 +283,10 @@ def add_password_file_arguments(parser):
     )
 
 def generate_passowrd_file_options(node, args):
-    with open("{}/{}/password.txt".format(os.getcwd(), node.name), 'w') as f:
+    name = get_option_value(node, args, 'name', required=True)
+    with open("{}/{}/password.txt".format(os.getcwd(), name), 'w') as f:
         f.write(args.password)
-    return "--password /root/{}/password.txt ".format(node.name)
+    return "--password /root/{}/password.txt ".format(name)
 
 #--------------------------- Key file --------------------------
 def add_keyfile_arguments(parser):
