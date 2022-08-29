@@ -93,8 +93,12 @@ def handle_relay_run(args):
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
         working_dir="/root",
-        auto_remove=True,
-        remove=True,
+        # auto_remove=True,
+        restart_policy={
+            'Name': 'on-failure',
+            'MaximumRetryCount': 10
+        },
+        #remove=True,
         stderr=True,
         stdout=True,
         detach=True,
