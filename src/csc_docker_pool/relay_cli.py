@@ -170,3 +170,30 @@ def parse_args(subparsers):
     )
     subparsers_lsit.set_defaults(func=handle_relay_list)
 
+
+
+#
+# Inquire validator description info
+#
+# cetd validator.description.query 
+#     --validator.address 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+#     --node http://127.0.0.1:8545
+#
+#
+# Inquire node info such as block generation, reward, etc
+#
+# cetd validator.info.query 
+#     --validator.address 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+#     --node http://127.0.0.1:8545
+#
+#
+# Inquire activated node list
+#
+# cetd validator.activated.query 
+#     --node http://127.0.0.1:8545
+#
+#
+# Inquire candidate node list
+#
+# cetd validator.candidators.query 
+#     --node http://127.0.0.1:8545

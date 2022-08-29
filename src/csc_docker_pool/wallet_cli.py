@@ -116,9 +116,7 @@ def parse_args(subparsers):
     add_name_arguments(wallet_new)
     add_password_file_arguments(wallet_new)
     
-    #----------------------------------------------------------
-    # new
-    #----------------------------------------------------------
+    #----------- import
     wallet_import = wallet_parser.add_parser(
         'import',
         help = "Imports an unencrypted private key and creates a new account.",
@@ -134,3 +132,31 @@ def parse_args(subparsers):
     add_name_arguments(wallet_import)
     add_password_file_arguments(wallet_import)
     add_keyfile_arguments(wallet_import)
+
+    #-------------- Stake
+    # Stake for validator node
+    #
+    # cetd staking 
+    #     --from 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --validator.address 0x42eacf5b37540920914589a6b1b5e45d82d0c1ca 
+    #     --validator.staking 10000000000000000000000 
+    #     --keystore ./data/keystore/ 
+    #     --node http://127.0.0.1:8545
+    
+    # ---------------- Unstake
+    #
+    # cetd unstaking 
+    #     --from 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --validator.address 0x42eacf5b37540920914589a6b1b5e45d82d0c1ca 
+    #     --keystore ./data/keystore/ 
+    #     --node http://127.0.0.1:8545
+    
+    
+
+    # -------- Withdraw staking
+    #
+    # cetd withdrawstake 
+    #     --from 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --validator.address 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --keystore ./data/keystore/ 
+    #     --node http://127.0.0.1:8545

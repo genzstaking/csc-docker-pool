@@ -7,11 +7,9 @@ import time
 import pandas
 import random
 
-
 from csc_docker_pool.node import *
 from csc_docker_pool.docker_util import *
 from csc_docker_pool.args_util import *
-
 
 _logger = logging.getLogger(__name__)
 
@@ -19,7 +17,6 @@ _logger = logging.getLogger(__name__)
 def handle_validator_init(args):
     _logger.info("Start handling validator init command")
     client = load_docker()
-    
     
     node = create_node_with_name(args)
     
@@ -71,7 +68,6 @@ def handle_validator_start(args):
 
 def handle_validator_stop(args):
     pass
-
 
 
 def parse_args(subparsers):
@@ -160,7 +156,6 @@ def parse_args(subparsers):
     )
     add_metric_arguments(staking_init)
     
-    
     # ----------- List
     validator_list = staking_parser.add_parser(
         'list',
@@ -175,7 +170,6 @@ def parse_args(subparsers):
     )
     validator_start.set_defaults(func=handle_validator_start)
     
-    
     # ----------- Stop
     validator_stop = staking_parser.add_parser(
         'stop',
@@ -183,4 +177,44 @@ def parse_args(subparsers):
     )
     validator_stop.set_defaults(func=handle_validator_stop)
     
-
+    # -------------- Edit
+    # Edit validator node
+    #
+    # cetd validator.edit 
+    #     --from 0x42eacf5b37540920914589a6b1b5e45d82d0c1ca 
+    #     --validator.rewardaddr 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --validator.moniker '<your node moniker>' 
+    #     --validator.website '<your home site>' 
+    #     --validator.email   '<your contract email>' 
+    #     --validator.detail  '<your node description>' 
+    #     --keystore ./data/keystore/  
+    #     --node http://127.0.0.1:8545
+    
+    # ----------- Withdraw reward
+    #
+    # cetd withdrawreward 
+    #     --from 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --validator.address 0x42eacf5b37540920914589a6b1b5e45d82d0c1ca 
+    #     --keystore ./data/keystore/ 
+    #     --node http://127.0.0.1:8545
+    
+    # ------------- Unjail node
+    #
+    # cetd unjail 
+    #     --from 0x582bd2e02494dc6beb9a14401f4eae009533484c 
+    #     --keystore ./data/keystore/ 
+    #     --node http://127.0.0.1:8545
+    
+    # Inquire staking info from any address to node
+    #
+    # cetd validator.staking.query 
+    #     --validator.address 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --validator.staker 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --node http://127.0.0.1:8545
+    #
+    #
+    # Inquire validator penalty record
+    #
+    # cetd validator.slash.record 
+    #     --validator.address 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
+    #     --node http://127.0.0.1:8545
