@@ -15,9 +15,9 @@ from csc_docker_pool.args_util import *
 
 _logger = logging.getLogger(__name__)
 
-    
-def handle_staking_init(args):
-    _logger.info("Start handling relay init command")
+
+def handle_validator_init(args):
+    _logger.info("Start handling validator init command")
     client = load_docker()
     
     
@@ -55,23 +55,28 @@ def handle_staking_init(args):
     return True
 
 
-def handle_staking_start(args):
+def handle_validator_list(args):
+    pass
+
+
+def handle_validator_start(args):
     # cetd 
     #     --datadir /path/your-data-localtion-folder 
     #     --unlock "your validator address" 
     #     --password /path/your-keyfile-folder/password.txt  
     #     --allow-insecure-unlock
     #     --mine  
-    return True
+    pass
 
 
-def handle_staking_stop(args):
-    return True
+def handle_validator_stop(args):
+    pass
+
 
 
 def parse_args(subparsers):
     parser = subparsers.add_parser(
-        'staking',
+        'validator',
         help='Manages a staking node'
     )
     staking_parser = parser.add_subparsers(
@@ -81,8 +86,7 @@ def parse_args(subparsers):
         """
     )
     
-    #----------------------------------------------------------
-    # init
+    #---------- init
     # --name          <name, a key to list nodex>
     # --network
     # --reward-wallet <address or name>
@@ -91,12 +95,11 @@ def parse_args(subparsers):
     # --description   <Define the node>
     # --website       <homepage address>
     # --relay         <address of relay node>
-    #----------------------------------------------------------
     staking_init = staking_parser.add_parser(
         'init',
         help='Initialize a staking node'
     )
-    staking_init.set_defaults(func=handle_staking_init)
+    staking_init.set_defaults(func=handle_validator_init)
     staking_init.add_argument(
         '--name',
         help='target wallet name',
@@ -157,3 +160,27 @@ def parse_args(subparsers):
     )
     add_metric_arguments(staking_init)
     
+    
+    # ----------- List
+    validator_list = staking_parser.add_parser(
+        'list',
+        help='List all initialized validator node'
+    )
+    validator_list.set_defaults(func=handle_validator_list)
+    
+    # ----------- Start
+    validator_start = staking_parser.add_parser(
+        'start',
+        help='Start a staking node'
+    )
+    validator_start.set_defaults(func=handle_validator_start)
+    
+    
+    # ----------- Stop
+    validator_stop = staking_parser.add_parser(
+        'stop',
+        help='Start a staking node'
+    )
+    validator_stop.set_defaults(func=handle_validator_stop)
+    
+

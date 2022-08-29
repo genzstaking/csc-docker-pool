@@ -12,7 +12,7 @@ from csc_docker_pool import __version__
 import csc_docker_pool.wallet_cli as wallet_cli
 import csc_docker_pool.config_cli as config_cli
 import csc_docker_pool.relay_cli as relay_cli
-import csc_docker_pool.staking_cli as staking_cli
+import csc_docker_pool.validator_cli as validator_cli
 
 __author__ = "maso"
 __copyright__ = "maso"
@@ -79,7 +79,7 @@ def parse_args(args):
     wallet_cli.parse_args(subparsers)
     config_cli.parse_args(subparsers)
     relay_cli.parse_args(subparsers)
-    staking_cli.parse_args(subparsers)
+    validator_cli.parse_args(subparsers)
     
     return parser.parse_args(args)
 

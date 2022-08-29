@@ -29,7 +29,7 @@ def docker_is_running(container_name):
     try:
         container = client.containers.get(container_name)
         container_state = container.attrs['State']
-        return container_state['Status'] == RUNNING
+        return container_state['Status'] == "running"
     except docker.errors.NotFound:
         return False
     except docker.errors.APIError:

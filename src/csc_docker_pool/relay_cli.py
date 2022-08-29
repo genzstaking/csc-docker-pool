@@ -105,8 +105,15 @@ def handle_relay_run(args):
 
 def handle_relay_list(args):
     root_path = os.getcwd()
-    nodes = [ create_node(f.path).__dict__ for f in os.scandir(root_path) if f.is_dir() and is_node(f.path) ]
-    frame = pandas.DataFrame(nodes, columns=['id', 'name', 'type', 'network', 'is_initialized'])
+    nodes = [ create_node(f.path) for f in os.scandir(root_path) if f.is_dir() and is_node(f.path) ]
+    data = []
+    for node in nodes:
+        if docker_is_running(generate_relay_name(node)):
+            node.state = 'Running'
+        else:
+            node.state = 'Stopped'
+        data.append(node.__dict__)
+    frame = pandas.DataFrame(data, columns=['id', 'name', 'type', 'network', 'is_initialized', 'state'])
     print(frame)
 
 
