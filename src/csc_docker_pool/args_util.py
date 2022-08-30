@@ -220,7 +220,7 @@ def generate_metrics_options(node, args):
             src.metrics_influxdb_database,
             src.metrics_influxdb_username,
             src.metrics_influxdb_password,
-            "host=" + generate_relay_name(relay))
+            "host=" + generate_relay_name(node))
     else:
         raise RuntimeError("""
             Metrics methods {} is not supported in current version.
