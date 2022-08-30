@@ -8,17 +8,20 @@ import pandas
 import random
 _logger = logging.getLogger(__name__)
 
+
 def get_option_value(node, args, key, required=False):
     val = node.get(key)
-    arg_val = getattr(args, key)
-    if arg_val:
-        val = arg_val
+    if hasattr(args, key):
+        arg_val = getattr(args, key)
+        if arg_val:
+            val = arg_val
     if required and not val:
         raise RuntimeError(msg="""
         The parameter with name {} is required but defined 
         neither in the node nor in the args.
         """.format(key))
     return val
+
 
 def generate_staking_options(node, args):
     
@@ -28,6 +31,7 @@ def generate_staking_options(node, args):
     options += "--validator.website {} ".format(node.website) 
     options += "--validator.email {} ".format(node.email)
     options += "--validator.detail {} ".format(node.description) 
+
 
 def generate_relay_options(node, args):
     #   --node http://127.0.0.1:8545
@@ -46,7 +50,6 @@ def generate_data_dir_options(node, args):
     return "--datadir /root "
 
 
-
 def generate_node_dir_options(node, args):
     name = node.name
     if args.name:
@@ -56,8 +59,12 @@ def generate_node_dir_options(node, args):
         os.mkdir(root_path)
     return "--datadir /root/{} ".format(args.name)
 
+
 #----------------------- Chain    -----------------------
 def add_chain_arguments(parser):
+    """
+    Chain arguments are used in relay node
+    """
     parser.add_argument(
         '--network',
         help='The name of the network (main, or test)',
@@ -67,21 +74,30 @@ def add_chain_arguments(parser):
         required=False,
         dest='network'
     )
+    parser.add_argument(
+        '--port',
+        help='Network listening port',
+        default='36652',
+        type=str,
+        required=False,
+        dest='port'
+    )
 
 
 def generate_chain_options(node, args):
-    net_type = node.network
-    if args.network:
-        net_type = args.network
-        
+    options = []
+    net_type = get_option_value(node, args, 'network')
     if net_type == 'test':
-        return " --testnet "
+        options.append(" --testnet ")
     elif net_type == "main":
-        return ""
-    
-    raise RuntimeError(msg="""
-        The type {} is not supported.
-    """.format(net_type))
+        options.append(" ")
+    else:
+        raise RuntimeError(msg="""
+            The type {} is not supported.
+        """.format(net_type))
+    options.append(" --port ")
+    options.append(get_option_value(node, args, 'port'))
+    return "".join(options)
 
 
 ###########################################################################
@@ -108,6 +124,7 @@ def add_bootnodes_arguments(parser):
         dest='bootnodes'
     )
 
+
 def generate_bootnodes_options(node, args):
     options = ""
     if 'bootnodes' in args and args.bootnodes != None:
@@ -133,11 +150,13 @@ def add_syncmode_arguments(parser):
         dest='network'
     )
 
+
 def generate_syncmod_options(node, args):
     options = ""
     if 'syncmod' in args:
         options = "--syncmod " + args.syncmod[0]
     return options
+
 
 ###########################################################################
 #                           Metrics
@@ -190,6 +209,7 @@ def add_metric_arguments(parser):
         required=False,
         dest='metrics_influxdb_password'
     )
+
     
 def generate_metrics_options(node, args):
     """Enables metrics options of the node
@@ -282,11 +302,13 @@ def add_password_file_arguments(parser):
         dest='password',
     )
 
+
 def generate_passowrd_file_options(node, args):
     name = get_option_value(node, args, 'name', required=True)
     with open("{}/{}/password.txt".format(os.getcwd(), name), 'w') as f:
         f.write(args.password)
     return "--password /root/{}/password.txt ".format(name)
+
 
 #--------------------------- Key file --------------------------
 def add_keyfile_arguments(parser):

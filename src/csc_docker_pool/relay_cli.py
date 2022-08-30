@@ -86,6 +86,7 @@ def handle_relay_run(args):
     _logger.info("Running ghcr.io/genz-bank/cetd container for node {}".format(args.name))
     if docker_is_running(generate_relay_name(relay)):
         handle_relay_stop(args)
+    port = get_option_value(relay, args, 'port')
     container = client.containers.run(
         image="ghcr.io/genz-bank/cetd",
         command=options,
@@ -93,11 +94,15 @@ def handle_relay_run(args):
         user=os.getuid(),
         volumes=[relay.path + ":/root"],
         working_dir="/root",
-        # auto_remove=True,
         restart_policy={
             'Name': 'on-failure',
             'MaximumRetryCount': 10
         },
+        ports = {
+            port+'/tcp':port,
+            port+'/udp':port
+        },
+        # auto_remove=True,
         #remove=True,
         stderr=True,
         stdout=True,
