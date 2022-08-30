@@ -19,6 +19,11 @@ RUN echo "Building tags/v$VERSION..." \
 
 # Run
 FROM debian:buster
+RUN apt-get update \
+    && apt-get install --no-install-recommends  -y \
+    ca-certificates \
+    && update-ca-certificates --fresh \
+    && apt-get clean
 COPY --from=build /build/csc/build/bin /bin
 
 ENTRYPOINT ["cetd"]
