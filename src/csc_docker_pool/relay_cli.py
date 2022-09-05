@@ -160,7 +160,7 @@ def parse_args(subparsers):
     
     #---- run
     subparsers_run = relay_parser.add_parser(
-        'run',
+        'start',
         help='Run the relay node'
     )
     subparsers_run.set_defaults(func=handle_relay_run)
