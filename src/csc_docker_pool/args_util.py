@@ -84,13 +84,14 @@ def generate_staking_options(node, args):
     --validator.detail \"{}\" 
     """.format(
         get_option_value(node, args, 'owner_wallet'),
-        get_option_value(node, args, 'reward_wallet'), 
+        get_option_value(node, args, 'reward_wallet'),
         get_option_value(node, args, 'label'),
         get_option_value(node, args, 'website'),
         get_option_value(node, args, 'email'),
         get_option_value(node, args, 'description')
     ) 
     return options 
+
 
 def generate_validator_addrress_options(node, args):
     options = """
@@ -99,6 +100,8 @@ def generate_validator_addrress_options(node, args):
         get_option_value(node, args, 'owner_wallet'),
     ) 
     return options 
+
+
 #------------------- Data director -----------------------
 def add_relay_arguments(parser):
     parser.add_argument(
@@ -109,6 +112,7 @@ def add_relay_arguments(parser):
         dest='relay'
     )
 
+
 def generate_relay_options(node, args):
     # TODO: support realy node url. here is example
     #   --node http://127.0.0.1:8545
@@ -117,15 +121,16 @@ def generate_relay_options(node, args):
     # load relay node
     path = os.getcwd() + '/' + relay_name
     _logger.debug("Loading node from {}".format(path))
-    relay_node= create_node(path)
+    relay_node = create_node(path)
     
-    #check if relay node is running
+    # check if relay node is running
     if not docker_is_running(generate_relay_name(relay_node)):
         _logger.error("Relay node is not running")
         exit(1)
     
     host = generate_relay_name(relay_node)
     return "--node http://{}:{} ".format(host, "8545")
+
 
 #------------------- Data director -----------------------
 def generate_data_dir_options(node, args):
@@ -144,7 +149,7 @@ def generate_node_dir_options(node, args):
     root_path = os.getcwd() + "/" + name
     if not os.path.isdir(root_path):
         os.mkdir(root_path)
-    return "--datadir /root/{} ".format(args.name)
+    return "--datadir /root "
 
 
 #----------------------- Chain    -----------------------
@@ -379,8 +384,10 @@ def add_name_arguments(parser):
 def generate_relay_name(node, args=None):
     return "csc_relay_" + node.name + "_" + node.id
 
+
 def generate_validator_name(node, args=None):
     return "csc_validator_" + node.name + "_" + node.id
+
 
 def generate_staking_name(node, args=None):
     return "csc_validator_" + node.name + "_" + node.id
@@ -398,10 +405,10 @@ def add_password_file_arguments(parser):
 
 
 def generate_passowrd_file_options(node, args):
-    name = get_option_value(node, args, 'name', required=True)
-    with open("{}/{}/password.txt".format(os.getcwd(), name), 'w') as f:
-        f.write(args.password)
-    return "--password /root/password.txt "
+    password = get_option_value(node, args, 'password', required=True)
+    with open("{}/password.txt".format(node.path), 'w') as f:
+        f.write(password)
+    return " --password /root/password.txt "
 
 
 #--------------------------- Key file --------------------------

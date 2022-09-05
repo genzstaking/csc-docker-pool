@@ -30,7 +30,7 @@ def handle_wallet_list(args):
         image="ghcr.io/genz-bank/cetd",
         command=options,
         user=os.getuid(),
-        volumes=[os.getcwd() + ":/root"],
+        volumes=[node.path + ":/root"],
         working_dir="/root",
         auto_remove=True,
         stderr=True,
@@ -47,7 +47,7 @@ def handle_wallet_new(args):
         
     # Command options
     options = "".join([
-        "account  new ",
+        " account  new ",
         generate_node_dir_options(node, args),
         generate_passowrd_file_options(node, args),
     ])
@@ -57,7 +57,7 @@ def handle_wallet_new(args):
         image="ghcr.io/genz-bank/cetd",
         command=options,
         user=os.getuid(),
-        volumes=[os.getcwd() + ":/root"],
+        volumes=[node.path + ":/root"],
         working_dir="/root",
         auto_remove=True,
         stderr=True,
@@ -85,7 +85,7 @@ def handle_wallet_import(args):
         image="ghcr.io/genz-bank/cetd",
         command=options,
         user=os.getuid(),
-        volumes=[os.getcwd() + ":/root"],
+        volumes=[node.path + ":/root"],
         working_dir="/root",
         auto_remove=True,
         stderr=True,
