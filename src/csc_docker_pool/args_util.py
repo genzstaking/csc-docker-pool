@@ -364,8 +364,8 @@ def generate_rpc_http_options(node, args):
         --http 
         --http.addr \"0.0.0.0\"
         --http.port 8545 
-        --http.vhosts localhost,{}
-        """.format(generate_relay_name(node))
+        --http.vhosts *
+        """
 
 
 ###########################################################################
