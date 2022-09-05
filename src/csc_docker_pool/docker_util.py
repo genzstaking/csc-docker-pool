@@ -43,4 +43,16 @@ def redirect_container_logs(container, args):
             for line in codecs.decode(lines).splitlines():
                 _logger.info(" container>" + line)
 
-
+def docker_get_or_create_network(name):
+    client = load_docker()
+    try:
+        network= client.networks.get(name)
+    except docker.errors.NotFound:
+        network = client.networks.create(
+            name=name, 
+            driver="bridge",
+            attachable=True)
+    except docker.errors.APIError:
+        _logger.critical(msg="Fail to load docker from environment. Check if it is installed and run")
+        exit(1)
+    return network

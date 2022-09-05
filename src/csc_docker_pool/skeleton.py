@@ -55,6 +55,12 @@ def parse_args(args):
         version="csc-docker-pool {ver}".format(ver=__version__),
     )
     parser.add_argument(
+        "--force",
+        action="store_true",
+        dest="force",
+        default=False
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         dest="loglevel",
@@ -92,9 +98,9 @@ def setup_logging(loglevel):
     """
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
     logging.basicConfig(
-        level=loglevel, 
-        stream=sys.stdout, 
-        format=logformat, 
+        level=loglevel,
+        stream=sys.stdout,
+        format=logformat,
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 

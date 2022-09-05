@@ -6,6 +6,10 @@ from builtins import IOError, FileNotFoundError
 import time
 import pandas
 import random
+
+from csc_docker_pool.node import *
+from csc_docker_pool.docker_util import *
+
 _logger = logging.getLogger(__name__)
 
 
@@ -23,22 +27,105 @@ def get_option_value(node, args, key, required=False):
     return val
 
 
-def generate_staking_options(node, args):
+#------------------- Data director -----------------------
+def add_staking_arguments(parser):
+    parser.add_argument(
+        '--reward-wallet',
+        help='reward receiver of validator (default: validator\'s address)',
+        type=str,
+        required=False,
+        dest='reward_wallet'
+    )
+    parser.add_argument(
+        '--owner-wallet',
+        help='transaction\'s from address',
+        type=str,
+        required=True,
+        dest='owner_wallet'
+    )
+    parser.add_argument(
+        '--label',
+        help='Label of the node',
+        type=str,
+        required=False,
+        dest='label'
+    )
+    parser.add_argument(
+        '--description',
+        help='description of the node',
+        type=str,
+        required=False,
+        dest='description'
+    )
+    parser.add_argument(
+        '--website',
+        help='website of the node',
+        type=str,
+        required=False,
+        dest='website'
+    )
+    parser.add_argument(
+        '--email',
+        help='Validator\'s email',
+        type=str,
+        required=False,
+        dest='email'
+    )
     
-    #   --from 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec  
-    #   --validator.rewardaddr 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
-    options += "--validator.moniker {} ".format(node.label) 
-    options += "--validator.website {} ".format(node.website) 
-    options += "--validator.email {} ".format(node.email)
-    options += "--validator.detail {} ".format(node.description) 
+    
+def generate_staking_options(node, args):
+    # TODO: maso, 2020, support wallet name
+    options = """
+    --from {} 
+    --validator.rewardaddr {} 
+    --validator.moniker \"{}\"
+    --validator.website \"{}\"
+    --validator.email \"{}\"
+    --validator.detail \"{}\" 
+    """.format(
+        get_option_value(node, args, 'owner_wallet'),
+        get_option_value(node, args, 'reward_wallet'), 
+        get_option_value(node, args, 'label'),
+        get_option_value(node, args, 'website'),
+        get_option_value(node, args, 'email'),
+        get_option_value(node, args, 'description')
+    ) 
+    return options 
 
+def generate_validator_addrress_options(node, args):
+    options = """
+    --unlock {} 
+    """.format(
+        get_option_value(node, args, 'owner_wallet'),
+    ) 
+    return options 
+#------------------- Data director -----------------------
+def add_relay_arguments(parser):
+    parser.add_argument(
+        '--relay',
+        help='Relay node name. We do not support remote relay in the current version',
+        type=str,
+        required=False,
+        dest='relay'
+    )
 
 def generate_relay_options(node, args):
+    # TODO: support realy node url. here is example
     #   --node http://127.0.0.1:8545
-    host = "localhost"
-    port = "8545"
-    return "--node http://{}:{} ".format(host, port)
-
+    relay_name = get_option_value(node, args, 'relay')
+    
+    # load relay node
+    path = os.getcwd() + '/' + relay_name
+    _logger.debug("Loading node from {}".format(path))
+    relay_node= create_node(path)
+    
+    #check if relay node is running
+    if not docker_is_running(generate_relay_name(relay_node)):
+        _logger.error("Relay node is not running")
+        exit(1)
+    
+    host = generate_relay_name(relay_node)
+    return "--node http://{}:{} ".format(host, "8545")
 
 #------------------- Data director -----------------------
 def generate_data_dir_options(node, args):
@@ -95,8 +182,12 @@ def generate_chain_options(node, args):
         raise RuntimeError(msg="""
             The type {} is not supported.
         """.format(net_type))
-    options.append(" --port ")
-    options.append(get_option_value(node, args, 'port'))
+    
+    if args.command == "relay":
+        # port is used in relay node
+        options.append(" --port ")
+        options.append(get_option_value(node, args, 'port'))
+    
     return "".join(options)
 
 
@@ -266,6 +357,7 @@ def generate_rpc_http_options(node, args):
     """
     return """
         --http 
+        --http.addr \"0.0.0.0\"
         --http.port 8545 
         --http.vhosts localhost,{}
         """.format(generate_relay_name(node))
@@ -287,6 +379,8 @@ def add_name_arguments(parser):
 def generate_relay_name(node, args=None):
     return "csc_relay_" + node.name + "_" + node.id
 
+def generate_validator_name(node, args=None):
+    return "csc_validator_" + node.name + "_" + node.id
 
 def generate_staking_name(node, args=None):
     return "csc_validator_" + node.name + "_" + node.id
@@ -307,7 +401,7 @@ def generate_passowrd_file_options(node, args):
     name = get_option_value(node, args, 'name', required=True)
     with open("{}/{}/password.txt".format(os.getcwd(), name), 'w') as f:
         f.write(args.password)
-    return "--password /root/{}/password.txt ".format(name)
+    return "--password /root/password.txt "
 
 
 #--------------------------- Key file --------------------------
@@ -323,5 +417,5 @@ def add_keyfile_arguments(parser):
 
 def generate_keystore_options(node, args):
     #   --keystore ./data/keystore/
-    path = "./data/keystore/"
+    path = "/root/keystore/"
     return " --keystore {} ".format(path)

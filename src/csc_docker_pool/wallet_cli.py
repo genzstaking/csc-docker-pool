@@ -21,7 +21,7 @@ def handle_wallet_list(args):
     node = load_node_with_name(args)
     # Command options
     options = "".join([
-        "account  list ",
+        " --verbosity 1 account  list ",
         generate_node_dir_options(node, args)
     ])
     
@@ -32,8 +32,12 @@ def handle_wallet_list(args):
         user=os.getuid(),
         volumes=[os.getcwd() + ":/root"],
         working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
     )
-    print(output.decode('utf-8'))
+    list = output.decode('utf-8')
+    print(list)
 
 def handle_wallet_new(args):
     _logger.info("Start handling wallet new command")
@@ -55,6 +59,7 @@ def handle_wallet_new(args):
         user=os.getuid(),
         volumes=[os.getcwd() + ":/root"],
         working_dir="/root",
+        auto_remove=True,
         stderr=True,
         stdout=True,
         detach=True,
@@ -82,6 +87,9 @@ def handle_wallet_import(args):
         user=os.getuid(),
         volumes=[os.getcwd() + ":/root"],
         working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
     )
     print(output.decode('utf-8'))
     

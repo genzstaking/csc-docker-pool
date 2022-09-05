@@ -74,6 +74,7 @@ def handle_relay_run(args):
     relay = create_node(os.getcwd() + '/' + args.name)
     check_node_initialized(relay)
     client = load_docker()
+    docker_get_or_create_network("csc")
     
     options = "".join([
         generate_data_dir_options(relay, args),
@@ -107,6 +108,9 @@ def handle_relay_run(args):
         stderr=True,
         stdout=True,
         detach=True,
+        hostname=generate_relay_name(relay),
+        network_disabled=False,
+        network="csc",
     )
     relay.save()
     redirect_container_logs(container, args)
@@ -132,6 +136,7 @@ def parse_args(subparsers):
         help='Manages a relay node'
     )
     relay_parser = parser.add_subparsers(
+        help="relay",
         title="Relay Nodes Management",
         description="""
         A relay node sync DB with the network.
@@ -139,7 +144,8 @@ def parse_args(subparsers):
         network. It fetch/push new blocks and keeps the ledger update.
         This command helps you to setup, manage and maintain a node over the network.
         You may have multiple relay node at the same time, where each of which deals with 
-        and specific network. For example a node to keeps testnet data."""
+        and specific network. For example a node to keeps testnet data.""",
+        dest='command'
     )
     
     #---- init
