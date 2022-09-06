@@ -39,6 +39,7 @@ def handle_wallet_list(args):
     list = output.decode('utf-8')
     print(list)
 
+
 def handle_wallet_new(args):
     _logger.info("Start handling wallet new command")
     client = load_docker()
@@ -93,6 +94,36 @@ def handle_wallet_import(args):
     )
     print(output.decode('utf-8'))
     
+
+def handle_wallet_stake(args):
+    _logger.info("Start handling wallet import command")
+    client = load_docker()
+    node = load_node_with_name(args)
+    _logger.info("Stake to node {}".format(args.name))
+    # Command options
+    options = "".join([
+        " staking ",
+        #generate_node_dir_options(node, args),
+        generate_staking_options(node, args),
+        generate_relay_options(node, args),
+        generate_passowrd_file_options(node, args),
+    ])
+    
+    _logger.debug("Options to run CETD : {}".format(options))
+    _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(node.name))
+    output = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        user=os.getuid(),
+        volumes=[node.path + ":/root"],
+        working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
+    )
+    print(output.decode('utf-8'))
+
+
 def parse_args(subparsers):
     parser = subparsers.add_parser(
         'wallet',
@@ -114,7 +145,6 @@ def parse_args(subparsers):
     wallet_lsit.set_defaults(func=handle_wallet_list)
     add_name_arguments(wallet_lsit)
     
-    
     #---------- new
     wallet_new = wallet_parser.add_parser(
         'new',
@@ -127,7 +157,7 @@ def parse_args(subparsers):
     #----------- import
     wallet_import = wallet_parser.add_parser(
         'import',
-        help = "Imports an unencrypted private key and creates a new account.",
+        help="Imports an unencrypted private key and creates a new account.",
         description="""
             Imports an unencrypted private key from <keyfile> and creates a new account.
             
@@ -142,15 +172,20 @@ def parse_args(subparsers):
     add_keyfile_arguments(wallet_import)
 
     #-------------- Stake
-    # Stake for validator node
-    #
-    # cetd staking 
-    #     --from 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
-    #     --validator.address 0x42eacf5b37540920914589a6b1b5e45d82d0c1ca 
-    #     --validator.staking 10000000000000000000000 
-    #     --keystore ./data/keystore/ 
-    #     --node http://127.0.0.1:8545
     
+    wallet_stake = wallet_parser.add_parser(
+        'stake',
+        help="Stake for validator node.",
+        description="""
+            Stake for validator node
+            """
+    )
+    wallet_stake.set_defaults(func=handle_wallet_stake)
+    add_name_arguments(wallet_stake)
+    add_password_file_arguments(wallet_stake)
+    add_relay_arguments(wallet_stake)
+    add_staking_arguments(wallet_stake)
+
     # ---------------- Unstake
     #
     # cetd unstaking 
@@ -158,8 +193,6 @@ def parse_args(subparsers):
     #     --validator.address 0x42eacf5b37540920914589a6b1b5e45d82d0c1ca 
     #     --keystore ./data/keystore/ 
     #     --node http://127.0.0.1:8545
-    
-    
 
     # -------- Withdraw staking
     #

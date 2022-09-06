@@ -426,3 +426,39 @@ def generate_keystore_options(node, args):
     #   --keystore ./data/keystore/
     path = "/root/keystore/"
     return " --keystore {} ".format(path)
+
+
+#--------------------------- Staking ---------------------------------
+def add_staking_arguments(parser):
+    parser.add_argument(
+        '--from',
+        help='.',
+        type=str,
+        required=True,
+        dest='from',
+    )
+    parser.add_argument(
+        '--value',
+        help='.',
+        type=str,
+        required=True,
+        dest='value',
+    )
+
+
+def generate_staking_options(node, args):
+    value = get_option_value(node, args, 'value', required=True)
+    wallet_addr = get_option_value(node, args, 'from', required=True)
+    owner_addr = node.owner_wallet
+    options = """
+    --from {} 
+    --validator.address {} 
+    --validator.staking {} 
+    --keystore /root/keystore/ 
+    """.format(
+        wallet_addr,
+        owner_addr,
+        value
+    )
+    return options
+    
