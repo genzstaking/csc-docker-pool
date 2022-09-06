@@ -28,7 +28,7 @@ def get_option_value(node, args, key, required=False):
 
 
 #------------------- Data director -----------------------
-def add_staking_arguments(parser):
+def add_validator_arguments(parser):
     parser.add_argument(
         '--reward-wallet',
         help='reward receiver of validator (default: validator\'s address)',
@@ -73,7 +73,7 @@ def add_staking_arguments(parser):
     )
     
     
-def generate_staking_options(node, args):
+def generate_validator_options(node, args):
     # TODO: maso, 2020, support wallet name
     options = """
     --from {} 

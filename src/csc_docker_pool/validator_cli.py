@@ -32,7 +32,7 @@ def handle_validator_init(args):
         generate_passowrd_file_options(node, args),
         generate_chain_options(node, args),
         #generate_logging_options(node, args),
-        generate_staking_options(node, args),
+        generate_validator_options(node, args),
         generate_relay_options(node, args),
         generate_metrics_options(node, args)
     ])
@@ -108,6 +108,7 @@ def handle_validator_start(args):
         stderr=True,
         stdout=True,
         detach=True,
+        network="csc",
     )
     redirect_container_logs(container, args)
     _logger.info("Node {} is initialized with default configuration".format(args.name))
@@ -131,12 +132,13 @@ def handle_validator_stop(args):
         exit(1)
 
 
-def handle_validator_edit(arg):
+def handle_validator_edit(args):
     _logger.info("Start handling validator init command")
     client = load_docker()
     handle_validator_stop(args)
     
     node = load_node_with_name(args)
+    node.load_from_args(args)
     
     if node.type != "csc-validator":
         _logger.error("This is not a validator node")
@@ -147,11 +149,12 @@ def handle_validator_edit(arg):
         exit(3)
     
     options = "".join([
-        "validator.edit",
-        generate_data_dir_options(node, args),
+        " validator.edit ",
+        generate_keystore_options(node, args),
+        generate_passowrd_file_options(node, args),
         generate_chain_options(node, args),
-        generate_logging_options(node, args),
-        generate_staking_options(node, args),
+        #generate_logging_options(node, args),
+        generate_validator_options(node, args),
         generate_relay_options(node, args),
         generate_metrics_options(node, args)
     ])
@@ -170,10 +173,10 @@ def handle_validator_edit(arg):
         stderr=True,
         stdout=True,
         detach=True,
+        network="csc",
     )
     redirect_container_logs(container, args)
     _logger.info("Node {} is initialized with default configuration".format(args.name))
-    node.load_from_args(args)
     node.is_initialized = True
     node.save()
 
@@ -209,9 +212,31 @@ def parse_args(subparsers):
     add_password_file_arguments(staking_init)
     add_name_arguments(staking_init)
     add_chain_arguments(staking_init)
-    add_staking_arguments(staking_init)
+    add_validator_arguments(staking_init)
     add_relay_arguments(staking_init)
     add_metric_arguments(staking_init)
+    
+    # -------------- Edit
+    # Edit validator node
+    # --name          <name, a key to list nodex>
+    # --network
+    # --reward-wallet <address or name>
+    # --owners        <address ..>
+    # --label         <string to show on pools>
+    # --description   <Define the node>
+    # --website       <homepage address>
+    # --relay         <address of relay node>
+    validator_edit = staking_parser.add_parser(
+        'edit',
+        help='Edit a validator node'
+    )
+    validator_edit.set_defaults(func=handle_validator_edit)
+    add_password_file_arguments(validator_edit)
+    add_name_arguments(validator_edit)
+    add_chain_arguments(validator_edit)
+    add_validator_arguments(validator_edit)
+    add_relay_arguments(validator_edit)
+    add_metric_arguments(validator_edit)
     
     # ----------- List
     validator_list = staking_parser.add_parser(
@@ -236,27 +261,6 @@ def parse_args(subparsers):
     )
     validator_stop.set_defaults(func=handle_validator_stop)
     add_name_arguments(validator_stop)
-    
-    # -------------- Edit
-    # Edit validator node
-    # --name          <name, a key to list nodex>
-    # --network
-    # --reward-wallet <address or name>
-    # --owners        <address ..>
-    # --label         <string to show on pools>
-    # --description   <Define the node>
-    # --website       <homepage address>
-    # --relay         <address of relay node>
-    validator_edit = staking_parser.add_parser(
-        'edit',
-        help='Edit a validator node'
-    )
-    validator_edit.set_defaults(func=handle_validator_edit)
-    add_name_arguments(validator_edit)
-    add_chain_arguments(validator_edit)
-    add_staking_arguments(validator_edit)
-    add_relay_arguments(validator_edit)
-    add_metric_arguments(validator_edit)
     
     # ----------- Withdraw reward
     #
