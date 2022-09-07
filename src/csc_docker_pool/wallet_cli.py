@@ -120,6 +120,7 @@ def handle_wallet_stake(args):
         auto_remove=True,
         stderr=True,
         stdout=True,
+        network="csc",
     )
     print(output.decode('utf-8'))
 

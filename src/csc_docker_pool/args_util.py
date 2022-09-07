@@ -128,8 +128,11 @@ def generate_relay_options(node, args):
         _logger.error("Relay node is not running")
         exit(1)
     
-    host = generate_relay_name(relay_node)
-    return "--node http://{}:{} ".format(host, "8545")
+    return """
+    --node http://{}:{} 
+    """.format(
+        generate_relay_name(relay_node), 
+        "8545")
 
 
 #------------------- Data director -----------------------
@@ -408,7 +411,9 @@ def generate_passowrd_file_options(node, args):
     password = get_option_value(node, args, 'password', required=True)
     with open("{}/password.txt".format(node.path), 'w') as f:
         f.write(password)
-    return " --password /root/password.txt "
+    return """
+    --password /root/password.txt 
+    """
 
 
 #--------------------------- Key file --------------------------
