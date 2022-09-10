@@ -101,6 +101,21 @@ def generate_validator_addrress_options(node, args):
     ) 
     return options 
 
+def generate_validator_addresses_options(node, args):
+    options = """
+    --validator.address {} 
+    """.format(
+        get_option_value(node, args, 'owner_wallet'),
+    ) 
+    return options 
+
+def generate_validator_from_address_options(node, args):
+    options = """
+    --from {} 
+    """.format(
+        get_option_value(node, args, 'owner_wallet'),
+    ) 
+    return options 
 
 #------------------- Data director -----------------------
 def add_relay_arguments(parser):

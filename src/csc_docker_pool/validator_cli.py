@@ -181,6 +181,135 @@ def handle_validator_edit(args):
     node.save()
 
 
+
+def handle_validator_info(args):
+    """
+    Inquire staking info from any address to node
+    
+    @param args: command line arguments
+    """
+    
+    _logger.info("Start handling validator info command")
+    client = load_docker()
+    handle_validator_stop(args)
+    
+    node = load_node_with_name(args)
+    
+    if node.type != "csc-validator":
+        _logger.error("This is not a validator node")
+        exit(3)
+    
+    if not node.is_initialized:
+        _logger.error("The node is not initialized")
+        exit(3)
+    
+    # Descripiton
+    options = "".join([
+        " validator.description.query ",
+        generate_validator_addresses_options(node, args),
+        generate_relay_options(node, args),
+    ])
+    
+    # Create validator node
+    _logger.debug("Options to run CETD : \n {}".format(options))
+    _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(node.name))
+    output = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        user=os.getuid(),
+        volumes=[node.path + ":/root"],
+        working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
+        detach=False,
+        network="csc",
+    )
+    print(output.decode('utf-8'))
+    
+    
+    # Info
+    options = "".join([
+        " validator.info.query ",
+        generate_validator_addresses_options(node, args),
+        generate_relay_options(node, args),
+    ])
+    
+    # Create validator node
+    _logger.debug("Options to run CETD : \n {}".format(options))
+    _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(node.name))
+    output = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        user=os.getuid(),
+        volumes=[node.path + ":/root"],
+        working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
+        detach=False,
+        network="csc",
+    )
+    print(output.decode('utf-8'))
+    
+    
+    # slash
+    options = "".join([
+        " validator.slash.record ",
+        generate_validator_addresses_options(node, args),
+        generate_relay_options(node, args),
+    ])
+    
+    # Create validator node
+    _logger.debug("Options to run CETD : \n {}".format(options))
+    _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(node.name))
+    output = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        user=os.getuid(),
+        volumes=[node.path + ":/root"],
+        working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
+        detach=False,
+        network="csc",
+    )
+    print(output.decode('utf-8'))
+
+
+def handle_validator_unjail(args):
+    _logger.info("Start handling validator unjail command")
+    client = load_docker()
+    node = load_node_with_name(args)
+    
+    options = "".join([
+        " unjail ", 
+        generate_keystore_options(node, args),
+        generate_passowrd_file_options(node, args),
+        generate_validator_from_address_options(node, args),
+        generate_relay_options(node, args),
+    ])
+    
+    # Create validator node
+    _logger.debug("Options to start CETD  validator : \n{}".format(options))
+    _logger.info("Running ghcr.io/genz-bank/cetd container to start a validator {}".format(args.name))
+    output = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        user=os.getuid(),
+        volumes=[node.path + ":/root"],
+        working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
+        detach=False,
+        network="csc",
+    )
+    print(output.decode('utf-8'))
+    return True
+
+
 def parse_args(subparsers):
     parser = subparsers.add_parser(
         'validator',
@@ -263,29 +392,33 @@ def parse_args(subparsers):
     add_name_arguments(validator_stop)
     
     # ----------- Withdraw reward
-    #
     # cetd withdrawreward 
     #     --from 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
     #     --validator.address 0x42eacf5b37540920914589a6b1b5e45d82d0c1ca 
     #     --keystore ./data/keystore/ 
     #     --node http://127.0.0.1:8545
+        
+    # ------------- Info
+    validator_info = staking_parser.add_parser(
+        'info',
+        help='Inquire staking info from any address to node'
+    )
+    validator_info.set_defaults(func=handle_validator_info)
+    add_relay_arguments(validator_info)
+    add_name_arguments(validator_info)
     
-    # ------------- Unjail node
+    
+    # ------------- Unjail
     # cetd unjail 
     #     --from 0x582bd2e02494dc6beb9a14401f4eae009533484c 
     #     --keystore ./data/keystore/ 
     #     --node http://127.0.0.1:8545
+    validator_unjail = staking_parser.add_parser(
+        'unjail',
+        help='Unjail validator if validator is jailed'
+    )
+    validator_unjail.set_defaults(func=handle_validator_unjail)
+    add_name_arguments(validator_unjail)
+    add_relay_arguments(validator_unjail)
+    add_password_file_arguments(validator_unjail)
     
-    # Inquire staking info from any address to node
-    #
-    # cetd validator.staking.query 
-    #     --validator.address 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
-    #     --validator.staker 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
-    #     --node http://127.0.0.1:8545
-    #
-    #
-    # Inquire validator penalty record
-    #
-    # cetd validator.slash.record 
-    #     --validator.address 0x65804ab640b1d4db5733a36f9f4fd2877e4714ec 
-    #     --node http://127.0.0.1:8545
