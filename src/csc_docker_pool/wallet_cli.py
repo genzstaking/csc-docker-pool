@@ -104,7 +104,7 @@ def handle_wallet_stake(args):
     options = "".join([
         " staking ",
         #generate_node_dir_options(node, args),
-        generate_staking_options(node, args),
+        generate_full_staking_options(node, args),
         generate_relay_options(node, args),
         generate_passowrd_file_options(node, args),
     ])
@@ -185,7 +185,7 @@ def parse_args(subparsers):
     add_name_arguments(wallet_stake)
     add_password_file_arguments(wallet_stake)
     add_relay_arguments(wallet_stake)
-    add_staking_arguments(wallet_stake)
+    add_full_staking_arguments(wallet_stake)
 
     # ---------------- Unstake
     #

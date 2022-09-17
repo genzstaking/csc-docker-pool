@@ -278,6 +278,34 @@ def handle_validator_info(args):
     print(output.decode('utf-8'))
 
 
+def handle_validator_stake(args):
+    _logger.info("Start staking from the validator address")
+    client = load_docker()
+    node = load_node_with_name(args)
+    _logger.info("Stake to node {}".format(args.name))
+    # Command options
+    options = "".join([
+        " staking ",
+        #generate_node_dir_options(node, args),
+        generate_staking_options(node, args),
+        generate_relay_options(node, args),
+        generate_passowrd_file_options(node, args),
+    ])
+    
+    _logger.debug("Options to run CETD : {}".format(options))
+    _logger.info("Running ghcr.io/genz-bank/cetd container to init node {}".format(node.name))
+    output = client.containers.run(
+        image="ghcr.io/genz-bank/cetd",
+        command=options,
+        user=os.getuid(),
+        volumes=[node.path + ":/root"],
+        working_dir="/root",
+        auto_remove=True,
+        stderr=True,
+        stdout=True,
+        network="csc",
+    )
+    print(output.decode('utf-8'))
 def handle_validator_unjail(args):
     _logger.info("Start handling validator unjail command")
     client = load_docker()
@@ -422,3 +450,23 @@ def parse_args(subparsers):
     add_relay_arguments(validator_unjail)
     add_password_file_arguments(validator_unjail)
     
+    
+    
+    #-------------- Stake
+    
+    validator_stake = staking_parser.add_parser(
+        'stake',
+        help="Stake for the validator node from itself.",
+        description="""
+            Stake for the validator node from the validator wallet. In this case
+            you are about to stake from the validator itself.
+            
+            To stake from a wallet with in the node keystore file see the 
+            'wallet stake' command.
+            """
+    )
+    validator_stake.set_defaults(func=handle_validator_stake)
+    add_name_arguments(validator_stake)
+    add_password_file_arguments(validator_stake)
+    add_relay_arguments(validator_stake)
+    add_staking_arguments(validator_stake)
